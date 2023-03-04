@@ -1,4 +1,4 @@
-﻿using NLox.Interpreter;
+﻿using NLox.Interpreter.Expressions;
 using System.Text;
 
 public static class AstPrinter

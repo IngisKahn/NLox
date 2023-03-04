@@ -37,7 +37,7 @@ public class Scanner
         this.error = error;
     }
 
-    public async Task<IEnumerable<Token>> ScanTokens()
+    public async Task<IList<Token>> ScanTokens()
     {
         while (!this.IsAtEnd)
         {
@@ -62,9 +62,11 @@ public class Scanner
             case '{': this.AddToken(TokenType.LeftBrace); break;
             case '}': this.AddToken(TokenType.RightBrace); break;
             case ',': this.AddToken(TokenType.Comma); break;
+            case ':': this.AddToken(TokenType.Colon); break;
             case '.': this.AddToken(TokenType.Dot); break;
             case '-': this.AddToken(TokenType.Minus); break;
             case '+': this.AddToken(TokenType.Plus); break;
+            case '?': this.AddToken(TokenType.Question); break;
             case ';': this.AddToken(TokenType.Semicolon); break;
             case '*': this.AddToken(TokenType.Star); break;
             case '!':
@@ -105,11 +107,7 @@ public class Scanner
                 else if (Scanner.IsAlpha(c))
                     this.Identifier();
                 else
-                {
-                    var t = this.error?.Invoke(this.line, "Unexpected character");
-                    if (t != null)
-                        await t;
-                }
+                    await (this.error?.Invoke(this.line, "Unexpected character") ?? Task.CompletedTask);
                 break;
         }
     }
@@ -146,9 +144,7 @@ public class Scanner
 
         if (this.IsAtEnd)
         {
-            var t = this.error?.Invoke(this.line, "Unterminated string.");
-            if (t != null)
-                await t;
+            await (this.error?.Invoke(this.line, "Unterminated string.") ?? Task.CompletedTask);
             return;
         }
 
@@ -191,7 +187,9 @@ public class Scanner
     {
         while (IsAlphaNumeric(this.Peek))
             this.Advance();
-
-        this.AddToken(TokenType.Identifier);
+        var text = source[start..current];
+        if (!keywords.TryGetValue(text, out var type))
+            type = TokenType.Identifier;
+        this.AddToken(type);
     }
 }
