@@ -17,7 +17,7 @@ else
 async Task RunFile(string path)
 {
     var bytes = await File.ReadAllBytesAsync(path);
-    Run(Encoding.Default.GetString(bytes));
+    await Run(Encoding.Default.GetString(bytes));
     if (hadError)
         Environment.Exit(65);
 }
@@ -32,15 +32,15 @@ async Task RunPrompt()
         var line = await reader.ReadLineAsync();
         if (line == null)
             break;
-        Run(line);
+        await Run(line);
         hadError = false;
     }
 }
 
-void Run(string source)
+async Task Run(string source)
 {
-    Scanner scanner = new(source);
-    var tokens = scanner.ScanTokens();
+    Scanner scanner = new(source, Error);
+    var tokens = await scanner.ScanTokens();
 
     // For now, just print the tokens.
     foreach (var token in tokens)
