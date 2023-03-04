@@ -1,5 +1,9 @@
 ﻿using System.Text;
 
+using NLox.Interpreter;
+
+var hadError = false;
+
 if (args.Length > 1)
 {
     Console.WriteLine("Usage: NLox [script]");
@@ -10,13 +14,15 @@ if (args.Length == 1)
 else
     await RunPrompt();
 
-static async Task RunFile(string path)
+async Task RunFile(string path)
 {
     var bytes = await File.ReadAllBytesAsync(path);
     Run(Encoding.Default.GetString(bytes));
+    if (hadError)
+        Environment.Exit(65);
 }
 
-static async Task RunPrompt()
+async Task RunPrompt()
 {
     var reader = Console.In;
 
@@ -27,10 +33,11 @@ static async Task RunPrompt()
         if (line == null)
             break;
         Run(line);
+        hadError = false;
     }
 }
 
-static void Run(string source)
+void Run(string source)
 {
     Scanner scanner = new(source);
     var tokens = scanner.ScanTokens();
@@ -40,11 +47,10 @@ static void Run(string source)
         Console.WriteLine(token);
 }
 
-internal class Scanner
+Task Error(int line, string message) => Report(line, "", message);
+
+Task Report(int line, string where, string message)
 {
-    private readonly string source;
-
-    public Scanner(string source) => this.source = source;
-
-    public IEnumerable<string> ScanTokens() => throw new NotImplementedException();
+    hadError = true;
+    return Console.Error.WriteLineAsync($"[line {line}] Error{where}: {message}");
 }

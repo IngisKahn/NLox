@@ -5,6 +5,8 @@ VisualStudioVersion = 17.4.32916.344
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NLox.Console", "NLox.Console\NLox.Console.csproj", "{0964423D-F967-4482-B56D-BC89602CAF7B}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NLox.Interpreter", "NLox.Interpreter\NLox.Interpreter.csproj", "{ADCC0202-EDA5-45D5-A8B3-6F8025AE3AD7}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -15,6 +17,10 @@ Global
 		{0964423D-F967-4482-B56D-BC89602CAF7B}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{0964423D-F967-4482-B56D-BC89602CAF7B}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{0964423D-F967-4482-B56D-BC89602CAF7B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{ADCC0202-EDA5-45D5-A8B3-6F8025AE3AD7}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{ADCC0202-EDA5-45D5-A8B3-6F8025AE3AD7}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{ADCC0202-EDA5-45D5-A8B3-6F8025AE3AD7}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{ADCC0202-EDA5-45D5-A8B3-6F8025AE3AD7}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
