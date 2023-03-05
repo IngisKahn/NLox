@@ -11,7 +11,10 @@ public class Interpreter
     private object? Evaluate(Unary unary)
     {
         var right = this.Evaluate(unary.Right);
-        return unary.Operator.Type switch
+
+        return unary.Operator.Type == TokenType.Minus && right is not double
+            ? throw new RuntimeException("Unary negation applied to non-number")
+            : unary.Operator.Type switch
         {
             TokenType.Minus => -(double)(right ?? 0),
             TokenType.Bang => !IsTruthy(right),
@@ -23,6 +26,20 @@ public class Interpreter
     {
         var left = this.Evaluate(binary.Left);
         var right = this.Evaluate(binary.Right);
+
+        switch (binary.Operator.Type)
+        {
+            case TokenType.Greater:
+            case TokenType.GreaterEqual:
+            case TokenType.Less:
+            case TokenType.LessEqual:
+            case TokenType.Minus:
+            case TokenType.Slash:
+            case TokenType.Star:
+                if (left is not double || right is not double)
+                    throw new RuntimeException(binary.Operator.Type + " operator requires numbers");
+                break;
+        }
 
         return binary.Operator.Type switch
         {
@@ -37,6 +54,7 @@ public class Interpreter
             TokenType.Star => (double)(left ?? 0) * (double)(right ?? 0),
             TokenType.Plus when left is double d1 && right is double d2 => d1 + d2,
             TokenType.Plus when left is string s1 && right is string s2 => s1 + s2,
+            TokenType.Plus => throw new RuntimeException("Plus operator can only be used on two numbers or two strings"),
             TokenType.Comma => right,
             _ => null
         }; ;
