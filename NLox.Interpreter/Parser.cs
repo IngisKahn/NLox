@@ -15,10 +15,23 @@ public class Parser
         this.tokens = tokens;
         this.error = error;
     }
-    public async IAsyncEnumerable<Statement> Parse()
+    public async IAsyncEnumerable<Statement?> Parse()
     {
         while (!this.IsAtEnd)
-            yield return await this.Statement();
+            yield return await this.Declaration();
+    }
+
+    private async Task<Statement?> Declaration()
+    {
+        try
+        {
+            return await (this.Match(TokenType.Var) ? VariableDeclaration() : Statement());
+        }
+        catch (ParsingException)
+        {
+            this.Synchronize();
+            return null;
+        }
     }
 
     private Task<Statement> Statement() => this.Match(TokenType.Print) ? this.PrintStatement() : this.ExpressionStatement();
@@ -164,6 +177,17 @@ public class Parser
 
         return await this.Primary();
     }
+
+    private async Task<Statement> VariableDeclaration()
+    {
+        var name = await this.Consume(TokenType.Identifier, "Expect variable name.");
+
+        var initializer = this.Match(TokenType.Equal) ? await this.Expression() : null;
+
+        await this.Consume(TokenType.Semicolon, "Expect ';' after variable declaration.");
+        return new VarStatement(name, initializer);
+    }
+
     private async Task<IExpression> Primary()
     {
         if (this.Match(TokenType.False))
@@ -175,6 +199,9 @@ public class Parser
 
         if (this.Match(TokenType.Number, TokenType.String))
             return new Literal(this.Previous.Literal);
+
+        if (this.Match(TokenType.Identifier))
+            return new Variable(this.Previous);
 
         if (this.Match(TokenType.LeftParen))
         {

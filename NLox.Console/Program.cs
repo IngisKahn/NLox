@@ -70,7 +70,8 @@ async Task Run(string source)
         if (hadError)
             return;
 
-        interpreter.Interpret(statement);
+        if (statement != null)
+            interpreter.Interpret(statement);
     }
 }
 
