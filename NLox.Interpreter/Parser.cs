@@ -3,6 +3,7 @@
 using NLox.Interpreter.Expressions;
 using NLox.Interpreter.Statements;
 using System;
+using System.ComponentModel.DataAnnotations;
 
 public class Parser
 {
@@ -54,12 +55,12 @@ public class Parser
     private Task<IExpression> Expression() => this.Comma();
     private async Task<IExpression> Comma()
     {
-        var expression = await this.Ternary();
+        var expression = await this.Assignment();
 
         while (this.Match(TokenType.Comma))
         {
             var @operator = this.Previous;
-            var right = await this.Ternary();
+            var right = await this.Assignment();
             expression = new Binary(expression, @operator, right);
         }
 
@@ -187,6 +188,24 @@ public class Parser
         await this.Consume(TokenType.Semicolon, "Expect ';' after variable declaration.");
         return new VarStatement(name, initializer);
     }
+
+    private async Task<IExpression> Assignment()
+    {
+        var expression = await this.Ternary();
+
+        if (!this.Match(TokenType.Equal))
+            return expression;
+
+        var equals = this.Previous;
+        var value = await this.Assignment();
+
+        if (expression is Variable v)
+            return new Assign(v.Name, value);
+
+        await Error(equals, "Invalid assignment target.");
+        return expression;
+    }
+
 
     private async Task<IExpression> Primary()
     {

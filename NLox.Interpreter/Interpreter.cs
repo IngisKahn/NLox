@@ -5,7 +5,11 @@ using NLox.Interpreter.Statements;
 
 public class Interpreter
 {
+    private readonly Scope scope = new();
+
     public void Interpret(Statement statement) => this.EvaluateStatement(statement);
+
+    private void EvaluateStatement(VarStatement statement) => this.scope.Define(statement.Name.Lexeme, statement.Expression != null ? this.Evaluate(statement.Expression) : null);
 
 
     private void EvaluateStatement(Statement statement) => this.EvaluateStatement((dynamic)statement);
@@ -15,6 +19,15 @@ public class Interpreter
         Console.WriteLine(Stringify(this.Evaluate(printStatement.Expression)));
 
     public object? Evaluate(IExpression expression) => this.Evaluate((dynamic)expression);
+
+    private object? Evaluate(Assign assign)
+    {
+        var value = this.Evaluate(assign.Value);
+        this.scope.Assign(assign.Name, value);
+        return value;
+    }
+
+    private object? Evaluate(Variable variable) => this.scope[variable.Name];
 
     private object? Evaluate(Literal literal) => literal.Value;
     private object? Evaluate(Grouping grouping) => this.Evaluate(grouping.Expression);
