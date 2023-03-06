@@ -3,19 +3,19 @@
 using NLox.Interpreter.Expressions;
 using NLox.Interpreter.Statements;
 using System;
-using System.ComponentModel.DataAnnotations;
 
 public class Parser
 {
     private readonly IList<Token> tokens;
     private readonly Func<Token, string, Task>? error;
-    private int current = 0;
+    public int Current { get; set; }
 
     public Parser(IList<Token> tokens, Func<Token, string, Task>? error)
     {
         this.tokens = tokens;
         this.error = error;
     }
+
     public async IAsyncEnumerable<IStatement?> Parse()
     {
         while (!this.IsAtEnd)
@@ -68,7 +68,7 @@ public class Parser
         return new ExpressionStatement(value);
     }
 
-    private Task<IExpression> Expression() => this.Comma();
+    public Task<IExpression> Expression() => this.Comma();
     private async Task<IExpression> Comma()
     {
         var expression = await this.Assignment();
@@ -133,15 +133,17 @@ public class Parser
 
     private Token Advance()
     {
-        if (!this.IsAtEnd) current++;
+        if (!this.IsAtEnd) 
+            Current++;
         return this.Previous;
     }
 
     private bool IsAtEnd => this.Peek.Type == TokenType.EoF;
 
-    private Token Peek => this.tokens[current];
+    private Token Peek => this.tokens[Current];
 
-    private Token Previous => this.tokens[current - 1];
+    private Token Previous => this.tokens[Current - 1];
+
 
     private async Task<IExpression> Comparison()
     {

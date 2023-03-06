@@ -108,7 +108,7 @@ public class Interpreter
     private static bool IsEqual(object? a, object? b) =>
         a == null ? b == null : a.Equals(b);
 
-    private static string Stringify(object? obj)
+    public static string Stringify(object? obj)
     {
         if (obj is null)
             return "nil";

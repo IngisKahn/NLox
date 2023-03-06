@@ -1,7 +1,6 @@
 ﻿using System.Text;
 
 using NLox.Interpreter;
-using NLox.Interpreter.Expressions;
 
 //var expression = new Binary(
 //new Unary(
@@ -14,6 +13,8 @@ using NLox.Interpreter.Expressions;
 //Console.WriteLine(AstPrinter.Print(expression));
 
 var hadError = false;
+
+Interpreter interpreter = new();
 
 await Run("""
     var a = "global a";
@@ -36,6 +37,7 @@ await Run("""
     print b;
     print c;
     """);
+
 
 if (args.Length > 1)
 {
@@ -67,24 +69,33 @@ async Task RunPrompt()
             break;
         try
         {
-            await Run(line);
+            await Run(line, true);
         }
         catch { }
         hadError = false;
     }
 }
 
-async Task Run(string source)
+async Task Run(string source, bool echoExpressions = false)
 {
-    Scanner scanner = new(source, Error);
+    Scanner scanner = new(source, echoExpressions ? EatError : Error);
     var tokens = await scanner.ScanTokens();
     Parser parser = new(tokens, TokenError);
-    Interpreter interpreter = new();
     await foreach (var statement in parser.Parse())
     {
+        var mark = parser.Current;
         // Stop if there was a syntax error.
         if (hadError)
-            return;
+        {
+            if (!echoExpressions)
+                break;
+            hadError = false;
+            var expression = await parser.Expression();
+            if (hadError)
+                break;
+            if (expression != null)
+                Console.WriteLine(Interpreter.Stringify(interpreter.Evaluate(expression)));
+        }
 
         if (statement != null)
             interpreter.Interpret(statement);
@@ -92,6 +103,12 @@ async Task Run(string source)
 }
 
 Task Error(int line, string message) => Report(line, "", message);
+
+Task EatError(int line, string message)
+{
+    hadError = true;
+    return Task.CompletedTask;
+}
 
 Task TokenError(Token token, string message) =>
     token.Type == TokenType.EoF
