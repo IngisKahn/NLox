@@ -15,6 +15,12 @@ using NLox.Interpreter.Expressions;
 
 var hadError = false;
 
+await Run("""
+    print "one";
+    print true;
+    print 2 + 1;
+    """);
+
 if (args.Length > 1)
 {
     Console.WriteLine("Usage: NLox [script]");
@@ -43,7 +49,11 @@ async Task RunPrompt()
         var line = await reader.ReadLineAsync();
         if (line == null)
             break;
-        await Run(line);
+        try
+        {
+            await Run(line);
+        }
+        catch { }
         hadError = false;
     }
 }
@@ -53,13 +63,15 @@ async Task Run(string source)
     Scanner scanner = new(source, Error);
     var tokens = await scanner.ScanTokens();
     Parser parser = new(tokens, TokenError);
-    var expression = await parser.Parse(); 
-    
-    // Stop if there was a syntax error.
-    if (hadError || expression == null) 
-        return;
+    Interpreter interpreter = new();
+    await foreach (var statement in parser.Parse())
+    {
+        // Stop if there was a syntax error.
+        if (hadError)
+            return;
 
-    Console.WriteLine(AstPrinter.Print(expression));
+        interpreter.Interpret(statement);
+    }
 }
 
 Task Error(int line, string message) => Report(line, "", message);

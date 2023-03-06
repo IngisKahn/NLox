@@ -112,7 +112,7 @@ public class Scanner
         }
     }
 
-    private char Advance() => this.source[this.current];
+    private char Advance() => this.source[this.current++];
 
     private void AddToken(TokenType token) => this.AddToken(token, null);
 

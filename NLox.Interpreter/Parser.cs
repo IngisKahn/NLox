@@ -1,6 +1,7 @@
 ﻿namespace NLox.Interpreter;
 
 using NLox.Interpreter.Expressions;
+using NLox.Interpreter.Statements;
 using System;
 
 public class Parser
@@ -14,16 +15,27 @@ public class Parser
         this.tokens = tokens;
         this.error = error;
     }
-    public async Task<IExpression?> Parse()
+    public async IAsyncEnumerable<Statement> Parse()
     {
-        try
-        {
-            return await this.Expression();
-        }
-        catch (ParsingException)
-        {
-            return null;
-        }
+        while (!this.IsAtEnd)
+            yield return await this.Statement();
+    }
+
+    private Task<Statement> Statement() => this.Match(TokenType.Print) ? this.PrintStatement() : this.ExpressionStatement();
+
+    private async Task<Statement> PrintStatement()
+    {
+        var value = await this.Expression();
+        if (value == null)
+            throw new ParsingException("Expect expression after 'print'");
+        await this.Consume(TokenType.Semicolon, "Expect ';' after expression");
+        return new PrintStatement(value);
+    }
+    private async Task<Statement> ExpressionStatement()
+    {
+        var value = await this.Expression();
+        await this.Consume(TokenType.Semicolon, "Expect ';' after expression");
+        return new ExpressionStatement(value);
     }
 
     private Task<IExpression> Expression() => this.Comma();
