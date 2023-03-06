@@ -2,4 +2,4 @@
 
 using NLox.Interpreter.Expressions;
 
-public record PrintStatement(IExpression Expression) : Statement(Expression);
+public record PrintStatement(IExpression Expression) : IStatement;

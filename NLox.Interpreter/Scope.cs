@@ -20,8 +20,11 @@ public class Scope
 
     public void Assign(Token name, object? value)
     {
-        if (!this.values.ContainsKey(name.Lexeme))
+        if (this.values.ContainsKey(name.Lexeme))
+            this.values[name.Lexeme] = value;
+        else if (this.enclosing != null)
+            this.enclosing.Assign(name, value);
+        else
             throw new RuntimeException(name, $"Undefined variable '{name.Lexeme}'.");
-        this.values[name.Lexeme] = value;
     }
 }

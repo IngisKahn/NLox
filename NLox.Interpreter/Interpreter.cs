@@ -5,14 +5,30 @@ using NLox.Interpreter.Statements;
 
 public class Interpreter
 {
-    private readonly Scope scope = new();
+    private /*readonly*/ Scope scope = new();
 
-    public void Interpret(Statement statement) => this.EvaluateStatement(statement);
+    public void Interpret(IStatement statement) => this.EvaluateStatement(statement);
 
     private void EvaluateStatement(VarStatement statement) => this.scope.Define(statement.Name.Lexeme, statement.Expression != null ? this.Evaluate(statement.Expression) : null);
 
 
-    private void EvaluateStatement(Statement statement) => this.EvaluateStatement((dynamic)statement);
+    private void EvaluateStatement(IStatement statement) => this.EvaluateStatement((dynamic)statement);
+
+    private void EvaluateStatement(Block block)
+    {
+        var previous = this.scope;
+        this.scope = new Scope(previous);
+        try
+        {
+            foreach (var statement in block.Statements) 
+                this.Interpret(statement);
+        }
+        finally
+        {
+            this.scope = previous;
+        }
+    }
+
     private void EvaluateStatement(ExpressionStatement expressionStatement) => this.Evaluate(expressionStatement.Expression);
 
     private void EvaluateStatement(PrintStatement printStatement) =>

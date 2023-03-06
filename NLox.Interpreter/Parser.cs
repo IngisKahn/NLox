@@ -16,13 +16,13 @@ public class Parser
         this.tokens = tokens;
         this.error = error;
     }
-    public async IAsyncEnumerable<Statement?> Parse()
+    public async IAsyncEnumerable<IStatement?> Parse()
     {
         while (!this.IsAtEnd)
             yield return await this.Declaration();
     }
 
-    private async Task<Statement?> Declaration()
+    private async Task<IStatement?> Declaration()
     {
         try
         {
@@ -35,9 +35,25 @@ public class Parser
         }
     }
 
-    private Task<Statement> Statement() => this.Match(TokenType.Print) ? this.PrintStatement() : this.ExpressionStatement();
+    private Task<IStatement> Statement() => this.Match(TokenType.Print) ? this.PrintStatement() :  this.Match(TokenType.LeftBrace) ? this.Block() : this.ExpressionStatement();
 
-    private async Task<Statement> PrintStatement()
+    private async Task<IStatement> Block()
+    {
+        List<IStatement> statements = new();
+
+        while (!Check(TokenType.RightBrace) && !this.IsAtEnd)
+        {
+            var statement = await Declaration();
+            if (statement != null) 
+                statements.Add(statement);
+        }
+
+        await this.Consume(TokenType.RightBrace, "Expect '}' after block.");
+
+        return new Block(statements);
+    }
+
+    private async Task<IStatement> PrintStatement()
     {
         var value = await this.Expression();
         if (value == null)
@@ -45,7 +61,7 @@ public class Parser
         await this.Consume(TokenType.Semicolon, "Expect ';' after expression");
         return new PrintStatement(value);
     }
-    private async Task<Statement> ExpressionStatement()
+    private async Task<IStatement> ExpressionStatement()
     {
         var value = await this.Expression();
         await this.Consume(TokenType.Semicolon, "Expect ';' after expression");
@@ -179,7 +195,7 @@ public class Parser
         return await this.Primary();
     }
 
-    private async Task<Statement> VariableDeclaration()
+    private async Task<IStatement> VariableDeclaration()
     {
         var name = await this.Consume(TokenType.Identifier, "Expect variable name.");
 
