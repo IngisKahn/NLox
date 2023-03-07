@@ -5,22 +5,13 @@ using NLox.Interpreter.Statements;
 
 public class Interpreter
 {
-    private readonly Scope globals = new();
-    private Scope scope;
+    public Scope Globals { get; } = new();
+    public Scope Scope { get; private set; }
 
     public Interpreter()
     {
-        this.scope = this.globals;
-        this.globals.Define("clock", new Clock());
-    }
-
-    private class Clock : ICallable
-    {
-        public int Arity => 0;
-
-        public object? Call(Interpreter interpreter, IList<object> arguments) => DateTime.Now.Ticks / (double)TimeSpan.TicksPerSecond;
-
-        public override string ToString() => "<native fn>";
+        this.Scope = this.Globals;
+        this.Globals.Define("clock", new Clock());
     }
 
     private enum BreakMode
@@ -38,7 +29,7 @@ public class Interpreter
             this.EvaluateStatement(statement);
     }
 
-    private void EvaluateStatement(VarStatement statement) => this.scope.Define(statement.Name.Lexeme, statement.Expression != null ? this.Evaluate(statement.Expression) : null);
+    private void EvaluateStatement(VarStatement statement) => this.Scope.Define(statement.Name.Lexeme, statement.Expression != null ? this.Evaluate(statement.Expression) : null);
 
 
     private void EvaluateStatement(IStatement statement) => this.EvaluateStatement((dynamic)statement);
@@ -51,10 +42,13 @@ public class Interpreter
             this.EvaluateStatement(ifStatement.Else);
     }
 
-    private void EvaluateStatement(Block block)
+    private void EvaluateStatement(Block block) =>
+        this.ExecuteBlock(block, new(this.Scope));
+
+    public void ExecuteBlock(Block block, Scope scope)
     {
-        var previous = this.scope;
-        this.scope = new Scope(previous);
+        var previous = this.Scope;
+        this.Scope = scope;
         try
         {
             foreach (var statement in block.Statements)
@@ -66,9 +60,12 @@ public class Interpreter
         }
         finally
         {
-            this.scope = previous;
+            this.Scope = previous;
         }
     }
+
+    private void EvaluateStatement(Function function) =>
+        this.Scope.Define(function.Name.Lexeme, new CallableFunction(function));
 
     private void EvaluateStatement(ExpressionStatement expressionStatement) => this.Evaluate(expressionStatement.Expression);
 
@@ -80,7 +77,7 @@ public class Interpreter
     private object? Evaluate(Assign assign)
     {
         var value = this.Evaluate(assign.Value);
-        this.scope.Assign(assign.Name, value);
+        this.Scope.Assign(assign.Name, value);
         return value;
     }
 
@@ -97,13 +94,7 @@ public class Interpreter
         return callee.Call(this, arguments);
     }
 
-    private interface ICallable
-    {
-        int Arity { get; }
-        object? Call(Interpreter interpreter, IList<object> arguments);
-    }
-
-    private object? Evaluate(Variable variable) => this.scope[variable.Name];
+    private object? Evaluate(Variable variable) => this.Scope[variable.Name];
 
     private object? Evaluate(Literal literal) => literal.Value;
     private object? Evaluate(Grouping grouping) => this.Evaluate(grouping.Expression);

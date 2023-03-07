@@ -17,25 +17,11 @@ var hadError = false;
 Interpreter interpreter = new();
 
 await Run("""
-    var a = "global a";
-    var b = "global b";
-    var c = "global c";
-    {
-      var a = "outer a";
-      var b = "outer b";
-      {
-        var a = "inner a";
-        print a;
-        print b;
-        print c;
-      }
-      print a;
-      print b;
-      print c;
+    fun sayHi(first, last) {
+      print "Hi, " + first + " " + last + "!";
     }
-    print a;
-    print b;
-    print c;
+
+    sayHi("Dear", "Reader");
     """);
 
 

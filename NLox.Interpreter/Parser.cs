@@ -310,12 +310,12 @@ public class Parser
     private async Task<IExpression> FinishCall(IExpression callee)
     {
         List<IExpression> arguments = new();
-        if (!this.Check(TokenType.LeftParen))
+        if (!this.Check(TokenType.RightParen))
             do
             {
                 if (arguments.Count >= 255)
                     await this.Error(this.Peek, "Can't have more than 255 arguments.");
-                arguments.Add(await this.Expression());
+                arguments.Add(await this.Assignment());
             }
             while (this.Match(TokenType.Comma));
 
