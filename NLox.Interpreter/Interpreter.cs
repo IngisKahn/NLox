@@ -14,6 +14,14 @@ public class Interpreter
 
     private void EvaluateStatement(IStatement statement) => this.EvaluateStatement((dynamic)statement);
 
+    private void EvaluateStatement(If ifStatement)
+    {
+        if (IsTruthy(this.Evaluate(ifStatement.Condition)))
+            this.EvaluateStatement(ifStatement.Then);
+        else if (ifStatement.Else != null)
+            this.EvaluateStatement(ifStatement.Else);
+    }
+
     private void EvaluateStatement(Block block)
     {
         var previous = this.scope;

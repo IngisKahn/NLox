@@ -35,7 +35,21 @@ public class Parser
         }
     }
 
-    private Task<IStatement> Statement() => this.Match(TokenType.Print) ? this.PrintStatement() :  this.Match(TokenType.LeftBrace) ? this.Block() : this.ExpressionStatement();
+    private async Task<IStatement> If()
+    {
+        await this.Consume(TokenType.LeftParen, "Expect '(' after 'if'.");
+        var condition = await this.Expression();
+        await this.Consume(TokenType.RightParen, "Expect ')' after if condition.");
+
+        var thenBranch = await this.Statement();
+        return this.Match(TokenType.Else) ? new If(condition, thenBranch, await this.Statement()) :
+            new If(condition, thenBranch);
+    }
+
+    private Task<IStatement> Statement() => 
+        this.Match(TokenType.If) ? this.If() :
+        this.Match(TokenType.Print) ? this.PrintStatement() :  
+        this.Match(TokenType.LeftBrace) ? this.Block() : this.ExpressionStatement();
 
     private async Task<IStatement> Block()
     {
