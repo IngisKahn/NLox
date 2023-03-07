@@ -5,8 +5,24 @@ using NLox.Interpreter.Statements;
 
 public class Interpreter
 {
-    private /*readonly*/ Scope scope = new();
-    
+    private readonly Scope globals = new();
+    private Scope scope;
+
+    public Interpreter()
+    {
+        this.scope = this.globals;
+        this.globals.Define("clock", new Clock());
+    }
+
+    private class Clock : ICallable
+    {
+        public int Arity => 0;
+
+        public object? Call(Interpreter interpreter, IList<object> arguments) => DateTime.Now.Ticks / (double)TimeSpan.TicksPerSecond;
+
+        public override string ToString() => "<native fn>";
+    }
+
     private enum BreakMode
     {
         None,
@@ -66,6 +82,25 @@ public class Interpreter
         var value = this.Evaluate(assign.Value);
         this.scope.Assign(assign.Name, value);
         return value;
+    }
+
+    private object? Evaluate(Call call)
+    {
+        if (this.Evaluate(call.Callee) is not ICallable callee)
+            throw new RuntimeException(call.Paren, "Can only call functions and classes.");
+
+        if (call.Arguments.Count != callee.Arity)
+            throw new RuntimeException(call.Paren, $"Expected {callee.Arity} arguments, but got {call.Arguments.Count}.");
+
+        var arguments = call.Arguments.Select(this.Evaluate).Where(a => a != null).Select(a => a!).ToArray();
+
+        return callee.Call(this, arguments);
+    }
+
+    private interface ICallable
+    {
+        int Arity { get; }
+        object? Call(Interpreter interpreter, IList<object> arguments);
     }
 
     private object? Evaluate(Variable variable) => this.scope[variable.Name];

@@ -274,7 +274,32 @@ public class Parser
             return new Unary(@operator, right);
         }
 
-        return await this.Primary();
+        return await this.Call();
+    }
+    private async Task<IExpression> Call()
+    {
+        var expression = await this.Primary();
+
+        while (this.Match(TokenType.LeftParen))
+            expression = await this.FinishCall(expression);
+
+        return expression;
+    }
+
+    private async Task<IExpression> FinishCall(IExpression callee)
+    {
+        List<IExpression> arguments = new();
+        if (!this.Check(TokenType.LeftParen))
+            do
+            {
+                if (arguments.Count >= 255)
+                    await this.Error(this.Peek, "Can't have more than 255 arguments.");
+                arguments.Add(await this.Expression());
+            }
+            while (this.Match(TokenType.Comma));
+
+        var paren = await this.Consume(TokenType.RightParen, "Expect ')' after arguments.");
+        return new Call(callee, paren, arguments);
     }
 
     private async Task<IStatement> VariableDeclaration()
