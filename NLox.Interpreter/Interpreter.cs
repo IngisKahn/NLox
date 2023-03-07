@@ -69,6 +69,20 @@ public class Interpreter
             };
     }
 
+    private object? Evaluate(Logical logical)
+    {
+        var left = this.Evaluate(logical.Left);
+        if (logical.Operator.Type == TokenType.Or)
+        {
+            if (IsTruthy(left))
+                return left;
+        }
+        else if (!IsTruthy(left))
+            return left;
+
+        return this.Evaluate(logical.Right);
+    }
+
     private object? Evaluate(Binary binary)
     {
         var left = this.Evaluate(binary.Left);

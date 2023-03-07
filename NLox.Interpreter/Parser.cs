@@ -99,13 +99,13 @@ public class Parser
     private async Task<IExpression> Ternary()
     {
         Stack<IExpression> expressions = new();
-        expressions.Push(await this.Equality());
+        expressions.Push(await this.Or());
 
         while (this.Match(TokenType.Question))
         {
             expressions.Push(await this.Expression());
             await this.Consume(TokenType.Colon, "Missing false condition of ternary expression");
-            expressions.Push(await this.Equality());
+            expressions.Push(await this.Or());
         }
 
         while (expressions.Count > 1)
@@ -116,6 +116,28 @@ public class Parser
         }
 
         return expressions.Pop();
+    }
+    private async Task<IExpression> Or()
+    {
+        var expression = await this.And();
+        while (this.Match(TokenType.Or))
+        {
+            var @operator = this.Previous;
+            expression = new Logical(expression, @operator, await this.And());
+        }
+
+        return expression;
+    }
+    private async Task<IExpression> And()
+    {
+        var expression = await this.Equality();
+        while (this.Match(TokenType.And))
+        {
+            var @operator = this.Previous;
+            expression = new Logical(expression, @operator, await this.Equality());
+        }
+
+        return expression;
     }
 
     private async Task<IExpression> Equality()
