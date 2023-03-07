@@ -46,11 +46,43 @@ public class Parser
             new If(condition, thenBranch);
     }
 
-    private Task<IStatement> Statement() => 
+    private Task<IStatement> Statement() =>
+        this.Match(TokenType.Break, TokenType.Continue) ? this.ControlFlowStatement() :
+        this.Match(TokenType.For) ? this.For() :
         this.Match(TokenType.If) ? this.If() :
         this.Match(TokenType.Print) ? this.PrintStatement() :
         this.Match(TokenType.While) ? this.WhileStatement() :
         this.Match(TokenType.LeftBrace) ? this.Block() : this.ExpressionStatement();
+    private async Task<IStatement> ControlFlowStatement()
+    {
+        var token = this.Previous;
+        await this.Consume(TokenType.Semicolon, $"Expect ';' after {token.Lexeme}");
+        return new ControlFlow(token);
+    }
+
+    private async Task<IStatement> For()
+    {
+        await this.Consume(TokenType.LeftParen, "Expect '(' after 'for'.");
+
+        IStatement? initializer;
+        if (this.Match(TokenType.Semicolon))
+            initializer = null;
+        else if (this.Match(TokenType.Var))
+            initializer = await VariableDeclaration();
+        else
+            initializer = await ExpressionStatement();
+        IExpression? condition = null;
+        if (!this.Check(TokenType.Semicolon))
+            condition = await Expression();
+        await this.Consume(TokenType.Semicolon, "Expect ';' after for condition.");
+        IExpression? increment = null;
+        if (!this.Check(TokenType.RightParen))
+            increment = await Expression();
+        await this.Consume(TokenType.RightParen, "Expect ')' after for clauses.");
+        var body = await this.Statement();
+
+        return new LoopStatement(initializer, condition, increment, body);
+    }
 
     private async Task<IStatement> Block()
     {
@@ -85,7 +117,7 @@ public class Parser
             throw new ParsingException("Expect expression after 'while ('");
         await this.Consume(TokenType.RightParen, "Expect ')' after 'while'.");
         
-        return new WhileStatement(condition, await this.Statement());
+        return new LoopStatement(null, condition, null,  await this.Statement());
     }
     private async Task<IStatement> ExpressionStatement()
     {

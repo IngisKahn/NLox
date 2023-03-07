@@ -14,7 +14,9 @@ public class Scanner
     private static readonly Dictionary<string, TokenType> keywords = new()
     {
         ["and"] = TokenType.And,
+        ["break"] = TokenType.Break,
         ["class"] = TokenType.Class,
+        ["continue"] = TokenType.Continue,
         ["else"] = TokenType.Else,
         ["false"] = TokenType.False,
         ["for"] = TokenType.For,

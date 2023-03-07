@@ -6,8 +6,21 @@ using NLox.Interpreter.Statements;
 public class Interpreter
 {
     private /*readonly*/ Scope scope = new();
+    
+    private enum BreakMode
+    {
+        None,
+        Break,
+        Continue
+    }
 
-    public void Interpret(IStatement statement) => this.EvaluateStatement(statement);
+    private BreakMode breakMode;
+
+    public void Interpret(IStatement statement)
+    {
+        if (this.breakMode == BreakMode.None || statement is LoopStatement)
+            this.EvaluateStatement(statement);
+    }
 
     private void EvaluateStatement(VarStatement statement) => this.scope.Define(statement.Name.Lexeme, statement.Expression != null ? this.Evaluate(statement.Expression) : null);
 
@@ -28,8 +41,12 @@ public class Interpreter
         this.scope = new Scope(previous);
         try
         {
-            foreach (var statement in block.Statements) 
+            foreach (var statement in block.Statements)
+            {
                 this.Interpret(statement);
+                if (breakMode != BreakMode.None)
+                    break;
+            }
         }
         finally
         {
@@ -83,11 +100,36 @@ public class Interpreter
         return this.Evaluate(logical.Right);
     }
 
-    private void EvaluateStatement(WhileStatement whileStatement)
+    private void EvaluateStatement(LoopStatement loopStatement)
     {
-        while (IsTruthy(this.Evaluate(whileStatement.Condition)))
-            this.EvaluateStatement(whileStatement.Body);
+        if (loopStatement.Initializer != null)
+            this.EvaluateStatement(loopStatement.Initializer);
+
+        while (loopStatement.Condition == null || IsTruthy(this.Evaluate(loopStatement.Condition)))
+        {
+            this.EvaluateStatement(loopStatement.Body);
+            var bail = false;
+            switch (this.breakMode)
+            {
+                case BreakMode.Continue:
+                    if (loopStatement.Condition != null)
+                        this.breakMode = BreakMode.None;
+                    else
+                        bail = true;
+                    break;
+                case BreakMode.Break:
+                    bail = true;
+                    this.breakMode = BreakMode.None;
+                    break;
+            }
+            if (bail)
+                break;
+            if (loopStatement.Increment != null)
+                this.Evaluate(loopStatement.Increment);
+        }
     }
+
+    private void EvaluateStatement(ControlFlow controlFlow) => this.breakMode = controlFlow.Token.Type == TokenType.Continue ? BreakMode.Continue : BreakMode.Break;
 
     private object? Evaluate(Binary binary)
     {

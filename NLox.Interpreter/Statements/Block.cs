@@ -1,2 +1,2 @@
 ﻿namespace NLox.Interpreter.Statements;
-public record Block(List<IStatement> Statements) : IStatement;
+public record Block(IList<IStatement> Statements) : IStatement;

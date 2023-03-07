@@ -16,7 +16,7 @@ public enum TokenType
     Identifier, String, Number,
 
     // Keywords.
-    And, Class, Else, False, Fun, For, If, Nil, Or,
+    And, Break, Class, Continue, Else, False, Fun, For, If, Nil, Or,
     Print, Return, Super, This, True, Var, While,
 
     EoF
