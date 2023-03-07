@@ -83,6 +83,12 @@ public class Interpreter
         return this.Evaluate(logical.Right);
     }
 
+    private void EvaluateStatement(WhileStatement whileStatement)
+    {
+        while (IsTruthy(this.Evaluate(whileStatement.Condition)))
+            this.EvaluateStatement(whileStatement.Body);
+    }
+
     private object? Evaluate(Binary binary)
     {
         var left = this.Evaluate(binary.Left);

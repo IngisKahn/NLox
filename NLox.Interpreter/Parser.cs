@@ -48,7 +48,8 @@ public class Parser
 
     private Task<IStatement> Statement() => 
         this.Match(TokenType.If) ? this.If() :
-        this.Match(TokenType.Print) ? this.PrintStatement() :  
+        this.Match(TokenType.Print) ? this.PrintStatement() :
+        this.Match(TokenType.While) ? this.WhileStatement() :
         this.Match(TokenType.LeftBrace) ? this.Block() : this.ExpressionStatement();
 
     private async Task<IStatement> Block()
@@ -74,6 +75,17 @@ public class Parser
             throw new ParsingException("Expect expression after 'print'");
         await this.Consume(TokenType.Semicolon, "Expect ';' after expression");
         return new PrintStatement(value);
+    }
+
+    private async Task<IStatement> WhileStatement()
+    {
+        await this.Consume(TokenType.LeftParen, "Expect '(' after 'while'.");
+        var condition = await this.Expression();
+        if (condition == null)
+            throw new ParsingException("Expect expression after 'while ('");
+        await this.Consume(TokenType.RightParen, "Expect ')' after 'while'.");
+        
+        return new WhileStatement(condition, await this.Statement());
     }
     private async Task<IStatement> ExpressionStatement()
     {
