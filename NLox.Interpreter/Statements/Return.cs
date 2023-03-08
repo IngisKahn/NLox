@@ -31,7 +31,14 @@
         }
     }
 
-    //public partial class Resolver 
-    //{
-    //}
+    public partial class Resolver
+    {
+        private void ResolveStatement(Return returnStatement)
+        {
+            if (currentFunction == FunctionType.None)
+                throw new RuntimeException(returnStatement.keyword, "Can't return from top-level code.");
+            if (returnStatement.Value != null)
+                this.Resolve(returnStatement.Value);
+        }
+    }
 }

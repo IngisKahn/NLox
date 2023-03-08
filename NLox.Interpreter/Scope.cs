@@ -27,4 +27,19 @@ public class Scope
         else
             throw new RuntimeException(name, $"Undefined variable '{name.Lexeme}'.");
     }
+
+    private Scope Ancestor(int distance)
+    {
+        var scope = this;
+
+        while (distance-- > 0)
+            scope = scope.enclosing!;
+
+        return scope;
+    }
+
+    public object? GetAt(int distance, string name) => this.Ancestor(distance).values[name];
+
+    public void AssignAt(int distance, Token name, object? value) => this.Ancestor(distance).values[name.Lexeme] = value;
+
 }

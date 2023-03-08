@@ -39,7 +39,8 @@
         }
     }
 
-    //public partial class Resolver 
-    //{
-    //}
+    public partial class Resolver 
+    {
+        private void ResolveExpression(Unary unary) => this.Resolve(unary.Right);
+    }
 }

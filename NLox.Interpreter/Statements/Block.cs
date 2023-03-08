@@ -51,7 +51,13 @@
         }
     }
 
-    //public partial class Resolver 
-    //{
-    //}
+    public partial class Resolver 
+    {
+        private void ResolveStatement(Block block) 
+        {
+            this.BeginScope();
+            this.Resolve(block.Statements);
+            this.EndScope();
+        }
+    }
 }

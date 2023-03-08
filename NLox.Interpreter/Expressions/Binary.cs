@@ -119,4 +119,13 @@
             }; ;
         }
     }
+
+    public partial class Resolver
+    {
+        private void ResolveExpression(Binary binary)
+        {
+            this.Resolve(binary.Left);
+            this.Resolve(binary.Right);
+        }
+    }
 }

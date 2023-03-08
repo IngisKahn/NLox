@@ -8,6 +8,7 @@ public partial class Interpreter
     public Scope Globals { get; } = new();
     public Scope Scope { get; private set; }
     public object? ReturnValue { get; set; }
+    private Dictionary<IExpression, int> locals = new();
 
     public Interpreter()
     {
@@ -24,7 +25,11 @@ public partial class Interpreter
     }
 
     private BreakMode breakMode;
-
+    public void Interpret(IEnumerable<IStatement> statements)
+    {
+        foreach (var statement in statements)
+            this.Interpret(statement);
+    }
     public void Interpret(IStatement statement)
     {
         if (this.breakMode == BreakMode.None || statement is LoopStatement && this.breakMode != BreakMode.Return)
@@ -36,6 +41,8 @@ public partial class Interpreter
     private object? EvaluateExpression(IExpression _) => throw new NotImplementedException();
 
     public object? Evaluate(IExpression expression) => this.EvaluateExpression((dynamic)expression);
+
+    public void Resolve(IExpression expression, int depth) => this.locals[expression] = depth;
 
     private static bool IsTruthy(object? value) => value != null && (value is not bool b || b);
 
@@ -57,4 +64,8 @@ public partial class Interpreter
 
         return obj.ToString()!;
     }
+    private object? LookUpVariable(Token name, IExpression expression) => 
+        this.locals.TryGetValue(expression, out var distance) 
+        ? this.Scope.GetAt(distance, name.Lexeme) 
+        : this.Globals[name];
 }

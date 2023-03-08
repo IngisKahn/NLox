@@ -26,7 +26,14 @@
         private void EvaluateStatement(VarStatement statement) => this.Scope.Define(statement.Name.Lexeme, statement.Expression != null ? this.Evaluate(statement.Expression) : null);
     }
 
-    //public partial class Resolver 
-    //{
-    //}
+    public partial class Resolver 
+    {
+        private void ResolveStatement(VarStatement varStatement)
+        {
+            this.Declare(varStatement.Name);
+            if (varStatement.Expression != null)
+                this.Resolve(varStatement.Expression);
+            this.Define(varStatement.Name);
+        }
+    }
 }

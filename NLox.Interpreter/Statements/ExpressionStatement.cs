@@ -23,7 +23,8 @@
         private void EvaluateStatement(ExpressionStatement expressionStatement) => this.Evaluate(expressionStatement.Expression);
     }
 
-    //public partial class Resolver 
-    //{
-    //}
+    public partial class Resolver 
+    {
+        private void ResolveStatement(ExpressionStatement expressionStatement) => this.Resolve(expressionStatement.Expression);
+    }
 }

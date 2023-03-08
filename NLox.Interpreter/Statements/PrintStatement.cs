@@ -26,7 +26,9 @@
             Console.WriteLine(Stringify(this.Evaluate(printStatement.Expression)));
     }
 
-    //public partial class Resolver 
-    //{
-    //}
+    public partial class Resolver 
+    {
+        private void ResolveStatement(PrintStatement printStatement) =>
+            this.Resolve(printStatement.Expression);
+    }
 }

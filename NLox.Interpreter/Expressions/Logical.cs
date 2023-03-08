@@ -51,7 +51,12 @@
         }
     }
 
-    //public partial class Resolver 
-    //{
-    //}
+    public partial class Resolver
+    {
+        private void ResolveExpression(Logical logical)
+        {
+            this.Resolve(logical.Left);
+            this.Resolve(logical.Right);
+        }
+    }
 }

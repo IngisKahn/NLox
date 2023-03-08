@@ -12,7 +12,8 @@
         private object? EvaluateExpression(Literal literal) => literal.Value;
     }
 
-    //public partial class Resolver 
-    //{
-    //}
+    public partial class Resolver
+    {
+        private void ResolveExpression(Literal _) { }
+    }
 }

@@ -38,7 +38,13 @@
             IsTruthy(this.Evaluate(ternary.Test)) ? this.Evaluate(ternary.Left) : this.Evaluate(ternary.Right);
     }
 
-    //public partial class Resolver 
-    //{
-    //}
+    public partial class Resolver
+    {
+        private void ResolveExpression(Ternary ternary)
+        {
+            this.Resolve(ternary.Test);
+            this.Resolve(ternary.Left);
+            this.Resolve(ternary.Right);
+        }
+    }
 }

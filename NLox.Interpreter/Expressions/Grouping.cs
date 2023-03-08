@@ -12,8 +12,9 @@
         private object? EvaluateExpression(Grouping grouping) => this.Evaluate(grouping.Expression);
     }
 
-    //public partial class Resolver 
-    //{
-    //}
+    public partial class Resolver
+    {
+        private void ResolveExpression(Grouping grouping) => this.Resolve(grouping.Expression);
+    }
 }
 

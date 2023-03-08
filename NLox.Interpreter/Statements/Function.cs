@@ -1,6 +1,7 @@
 ﻿namespace NLox.Interpreter
 {
     using Statements;
+    using System;
 
     namespace Statements
     {
@@ -33,7 +34,28 @@
             this.Scope.Define(function.Name.Lexeme, new CallableFunction(function, this.Scope));
     }
 
-    //public partial class Resolver 
-    //{
-    //}
+    public partial class Resolver 
+    {
+        public void ResolveStatement(Function function)
+        {
+            this.Declare(function.Name);
+            this.Define(function.Name);
+            this.ResolveFunction(function, FunctionType.Function);
+        }
+
+        private void ResolveFunction(Function function, FunctionType functionType)
+        {
+            var enclosingFunction = this.currentFunction;
+            currentFunction = functionType;
+            this.BeginScope();
+            foreach (var parameter in function.Parameters)
+            {
+                this.Declare(parameter);
+                this.Define(parameter);
+            }
+            this.Resolve(function.Body);
+            this.EndScope();
+            currentFunction = enclosingFunction;
+        }
+    }
 }

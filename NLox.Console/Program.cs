@@ -1,6 +1,7 @@
 ﻿using System.Text;
 
 using NLox.Interpreter;
+using NLox.Interpreter.Statements;
 
 //var expression = new Binary(
 //new Unary(
@@ -17,13 +18,15 @@ var hadError = false;
 Interpreter interpreter = new();
 
 await Run("""
-    fun fib(n) {
-      if (n <= 1) return n;
-      return fib(n - 2) + fib(n - 1);
-    }
+    var a = "global";
+    {
+      fun showA() {
+        print a;
+      }
 
-    for (var i = 0; i < 20; i = i + 1) {
-      print fib(i);
+      showA();
+      var a = "block";
+      showA();
     }
     """);
 
@@ -70,6 +73,8 @@ async Task Run(string source, bool echoExpressions = false)
     Scanner scanner = new(source, echoExpressions ? EatError : Error);
     var tokens = await scanner.ScanTokens();
     Parser parser = new(tokens, TokenError);
+    Resolver resolver = new(interpreter);
+    List<IStatement> statements = new();
     await foreach (var statement in parser.Parse())
     {
         var mark = parser.Current;
@@ -86,9 +91,20 @@ async Task Run(string source, bool echoExpressions = false)
                 Console.WriteLine(Interpreter.Stringify(interpreter.Evaluate(expression)));
         }
 
-        if (statement != null)
-            interpreter.Interpret(statement);
+
+
+        if (statement == null)
+            continue;
+
+        statements.Add(statement);
     }
+
+    resolver.Resolve(statements);
+    // Stop if there was a resolution error.
+    if (hadError)
+        return;
+    interpreter.Interpret(statements);
+
 }
 
 Task Error(int line, string message) => Report(line, "", message);

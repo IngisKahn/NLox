@@ -32,17 +32,20 @@
         private object? EvaluateExpression(Assign assign)
         {
             var value = this.Evaluate(assign.Value);
-            this.Scope.Assign(assign.Name, value);
+            if (this.locals.TryGetValue(assign, out var distance))
+                this.Scope.AssignAt(distance, assign.Name, value);
+            else
+                this.Globals.Assign(assign.Name, value);
             return value;
         }
     }
 
-    //public partial class Resolver 
-    //{
-    //    private void ResolveExpression(Assign assign) 
-    //    {
-    //        this.Resolve(assign.Value);
-    //        this.ResolveLocal(assign, assign.Name);
-    //    }
-    //}
+    public partial class Resolver
+    {
+        private void ResolveExpression(Assign assign)
+        {
+            this.Resolve(assign.Value);
+            this.ResolveLocal(assign, assign.Name);
+        }
+    }
 }

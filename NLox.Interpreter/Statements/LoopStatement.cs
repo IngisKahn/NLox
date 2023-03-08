@@ -78,7 +78,15 @@
         }
     }
 
-    //public partial class Resolver 
-    //{
-    //}
+    public partial class Resolver 
+    {
+        private void ResolveStatement(LoopStatement loopStatement)
+        {
+            if (loopStatement.Initializer != null)
+                this.Resolve(loopStatement.Initializer);
+            this.Resolve(loopStatement.Body);
+            if (loopStatement.Increment != null)
+                this.Resolve(loopStatement.Increment);
+        }
+    }
 }

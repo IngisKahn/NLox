@@ -53,4 +53,14 @@
             return result;
         }
     }
+
+    public partial class Resolver
+    {
+        private void ResolveExpression(Call call)
+        {
+            this.Resolve(call.Callee);
+            foreach (var argument in call.Arguments)
+                this.Resolve(argument);
+        }
+    }
 }

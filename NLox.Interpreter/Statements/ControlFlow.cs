@@ -1,5 +1,6 @@
 ﻿namespace NLox.Interpreter
 {
+    using NLox.Interpreter.Expressions;
     using Statements;
 
     namespace Statements
@@ -22,7 +23,8 @@
         private void EvaluateStatement(ControlFlow controlFlow) => this.breakMode = controlFlow.Token.Type == TokenType.Continue ? BreakMode.Continue : BreakMode.Break;
     }
 
-    //public partial class Resolver 
-    //{
-    //}
+    public partial class Resolver
+    {
+        private void ResolveStatement(ControlFlow _) { }
+    }
 }

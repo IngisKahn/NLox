@@ -33,7 +33,14 @@
         }
     }
 
-    //public partial class Resolver 
-    //{
-    //}
+    public partial class Resolver 
+    {
+        private void ResolveStatement(If ifStatement)
+        {
+            this.Resolve(ifStatement.Condition);
+            this.Resolve(ifStatement.Then);
+            if (ifStatement.Else != null)
+                this.Resolve(ifStatement.Else);
+        }
+    }
 }
