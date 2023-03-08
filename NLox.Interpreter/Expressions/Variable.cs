@@ -1,3 +1,18 @@
-﻿namespace NLox.Interpreter.Expressions;
+﻿namespace NLox.Interpreter
+{
+    using Expressions;
 
-public record Variable(Token Name) : IExpression;
+    namespace Expressions
+    {
+        public record Variable(Token Name) : IExpression;
+    }
+
+    public partial class Interpreter
+    {
+        private object? EvaluateExpression(Variable variable) => this.Scope[variable.Name];
+    }
+
+    //public partial class Resolver 
+    //{
+    //}
+}

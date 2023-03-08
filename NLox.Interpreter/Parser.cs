@@ -4,7 +4,7 @@ using NLox.Interpreter.Expressions;
 using NLox.Interpreter.Statements;
 using System;
 
-public class Parser
+public partial class Parser
 {
     private readonly IList<Token> tokens;
     private readonly Func<Token, string, Task>? error;
@@ -39,34 +39,6 @@ public class Parser
         }
     }
 
-    private async Task<IStatement> Function(string kind)
-    {
-        var name = await this.Consume(TokenType.Identifier, $"Expect {kind} name."); 
-        await this.Consume(TokenType.LeftParen, $"Expect '(' after {kind} name.");
-        List<Token> parameters = new();
-        if (!this.Check(TokenType.RightParen))
-            do
-            {
-                if (parameters.Count >= 255)
-                    await this.Error(this.Peek, "Can't have more than 255 parameters.");
-                parameters.Add(await this.Consume(TokenType.Identifier, "Expect parameter name."));
-            } while (this.Match(TokenType.Comma));
-        await this.Consume(TokenType.RightParen, "Expect ')' after parameters.");
-        await this.Consume(TokenType.LeftBrace, $"Expect '{{' before {kind} body.");
-        return new Function(name, parameters, (Block)await this.Block());
-    }
-
-    private async Task<IStatement> If()
-    {
-        await this.Consume(TokenType.LeftParen, "Expect '(' after 'if'.");
-        var condition = await this.Expression();
-        await this.Consume(TokenType.RightParen, "Expect ')' after if condition.");
-
-        var thenBranch = await this.Statement();
-        return this.Match(TokenType.Else) ? new If(condition, thenBranch, await this.Statement()) :
-            new If(condition, thenBranch);
-    }
-
     private Task<IStatement> Statement() =>
         this.Match(TokenType.Break, TokenType.Continue) ? this.ControlFlowStatement() :
         this.Match(TokenType.For) ? this.For() :
@@ -75,159 +47,8 @@ public class Parser
         this.Match(TokenType.Return) ? this.ReturnStatement() :
         this.Match(TokenType.While) ? this.WhileStatement() :
         this.Match(TokenType.LeftBrace) ? this.Block() : this.ExpressionStatement();
-    private async Task<IStatement> ControlFlowStatement()
-    {
-        var token = this.Previous;
-        await this.Consume(TokenType.Semicolon, $"Expect ';' after {token.Lexeme}");
-        return new ControlFlow(token);
-    }
-
-    private async Task<IStatement> For()
-    {
-        await this.Consume(TokenType.LeftParen, "Expect '(' after 'for'.");
-
-        IStatement? initializer;
-        if (this.Match(TokenType.Semicolon))
-            initializer = null;
-        else if (this.Match(TokenType.Var))
-            initializer = await VariableDeclaration();
-        else
-            initializer = await ExpressionStatement();
-        IExpression? condition = null;
-        if (!this.Check(TokenType.Semicolon))
-            condition = await Expression();
-        await this.Consume(TokenType.Semicolon, "Expect ';' after for condition.");
-        IExpression? increment = null;
-        if (!this.Check(TokenType.RightParen))
-            increment = await Expression();
-        await this.Consume(TokenType.RightParen, "Expect ')' after for clauses.");
-        var body = await this.Statement();
-
-        return new LoopStatement(initializer, condition, increment, body);
-    }
-
-    private async Task<IStatement> Block()
-    {
-        List<IStatement> statements = new();
-
-        while (!Check(TokenType.RightBrace) && !this.IsAtEnd)
-        {
-            var statement = await Declaration();
-            if (statement != null) 
-                statements.Add(statement);
-        }
-
-        await this.Consume(TokenType.RightBrace, "Expect '}' after block.");
-
-        return new Block(statements);
-    }
-
-    private async Task<IStatement> PrintStatement()
-    {
-        var value = await this.Expression();
-        if (value == null)
-            throw new ParsingException("Expect expression after 'print'");
-        await this.Consume(TokenType.Semicolon, "Expect ';' after expression");
-        return new PrintStatement(value);
-    }
-
-    private async Task<IStatement> ReturnStatement()
-    {
-        var keyword = this.Previous;
-        var value = this.Check(TokenType.Semicolon) ? null : await this.Expression();
-
-        await this.Consume(TokenType.Semicolon, "Expect ';' after return value");
-        return new Return(keyword, value);
-    }
-
-    private async Task<IStatement> WhileStatement()
-    {
-        await this.Consume(TokenType.LeftParen, "Expect '(' after 'while'.");
-        var condition = await this.Expression();
-        if (condition == null)
-            throw new ParsingException("Expect expression after 'while ('");
-        await this.Consume(TokenType.RightParen, "Expect ')' after 'while'.");
-        
-        return new LoopStatement(null, condition, null,  await this.Statement());
-    }
-    private async Task<IStatement> ExpressionStatement()
-    {
-        var value = await this.Expression();
-        await this.Consume(TokenType.Semicolon, "Expect ';' after expression");
-        return new ExpressionStatement(value);
-    }
 
     public Task<IExpression> Expression() => this.Comma();
-    private async Task<IExpression> Comma()
-    {
-        var expression = await this.Assignment();
-
-        while (this.Match(TokenType.Comma))
-        {
-            var @operator = this.Previous;
-            var right = await this.Assignment();
-            expression = new Binary(expression, @operator, right);
-        }
-
-        return expression;
-    }
-    private async Task<IExpression> Ternary()
-    {
-        Stack<IExpression> expressions = new();
-        expressions.Push(await this.Or());
-
-        while (this.Match(TokenType.Question))
-        {
-            expressions.Push(await this.Expression());
-            await this.Consume(TokenType.Colon, "Missing false condition of ternary expression");
-            expressions.Push(await this.Or());
-        }
-
-        while (expressions.Count > 1)
-        {
-            var right = expressions.Pop();
-            var left = expressions.Pop();
-            expressions.Push(new Ternary(expressions.Pop(), left, right));
-        }
-
-        return expressions.Pop();
-    }
-    private async Task<IExpression> Or()
-    {
-        var expression = await this.And();
-        while (this.Match(TokenType.Or))
-        {
-            var @operator = this.Previous;
-            expression = new Logical(expression, @operator, await this.And());
-        }
-
-        return expression;
-    }
-    private async Task<IExpression> And()
-    {
-        var expression = await this.Equality();
-        while (this.Match(TokenType.And))
-        {
-            var @operator = this.Previous;
-            expression = new Logical(expression, @operator, await this.Equality());
-        }
-
-        return expression;
-    }
-
-    private async Task<IExpression> Equality()
-    {
-        var expression = await this.Comparison();
-
-        while (this.Match(TokenType.BangEqual, TokenType.EqualEqual))
-        {
-            var @operator = this.Previous;
-            var right = await this.Comparison();
-            expression = new Binary(expression, @operator, right);
-        }
-
-        return expression;
-    }
 
     private bool Match(params TokenType[] types)
     {
@@ -254,113 +75,7 @@ public class Parser
     private Token Peek => this.tokens[Current];
 
     private Token Previous => this.tokens[Current - 1];
-
-
-    private async Task<IExpression> Comparison()
-    {
-        var expression = await this.Term();
-
-        while (this.Match(TokenType.Greater, TokenType.GreaterEqual, TokenType.Less, TokenType.LessEqual))
-        {
-            var @operator = this.Previous;
-            var right = await this.Term();
-            expression = new Binary(expression, @operator, right);
-        }
-
-        return expression;
-    }
-
-    private async Task<IExpression> Term()
-    {
-        var expression = await this.Factor();
-
-        while (this.Match(TokenType.Minus, TokenType.Plus))
-        {
-            var @operator = this.Previous;
-            var right = await this.Factor();
-            expression = new Binary(expression, @operator, right);
-        }
-
-        return expression;
-    }
-    private async Task<IExpression> Factor()
-    {
-        var expression = await this.Unary();
-
-        while (this.Match(TokenType.Slash, TokenType.Star))
-        {
-            var @operator = this.Previous;
-            var right = await this.Unary();
-            expression = new Binary(expression, @operator, right);
-        }
-
-        return expression;
-    }
-    private async Task<IExpression> Unary()
-    {
-        if (this.Match(TokenType.Bang, TokenType.Minus))
-        {
-            var @operator = this.Previous;
-            var right = await this.Unary();
-            return new Unary(@operator, right);
-        }
-
-        return await this.Call();
-    }
-    private async Task<IExpression> Call()
-    {
-        var expression = await this.Primary();
-
-        while (this.Match(TokenType.LeftParen))
-            expression = await this.FinishCall(expression);
-
-        return expression;
-    }
-
-    private async Task<IExpression> FinishCall(IExpression callee)
-    {
-        List<IExpression> arguments = new();
-        if (!this.Check(TokenType.RightParen))
-            do
-            {
-                if (arguments.Count >= 255)
-                    await this.Error(this.Peek, "Can't have more than 255 arguments.");
-                arguments.Add(await this.Assignment());
-            }
-            while (this.Match(TokenType.Comma));
-
-        var paren = await this.Consume(TokenType.RightParen, "Expect ')' after arguments.");
-        return new Call(callee, paren, arguments);
-    }
-
-    private async Task<IStatement> VariableDeclaration()
-    {
-        var name = await this.Consume(TokenType.Identifier, "Expect variable name.");
-
-        var initializer = this.Match(TokenType.Equal) ? await this.Expression() : null;
-
-        await this.Consume(TokenType.Semicolon, "Expect ';' after variable declaration.");
-        return new VarStatement(name, initializer);
-    }
-
-    private async Task<IExpression> Assignment()
-    {
-        var expression = await this.Ternary();
-
-        if (!this.Match(TokenType.Equal))
-            return expression;
-
-        var equals = this.Previous;
-        var value = await this.Assignment();
-
-        if (expression is Variable v)
-            return new Assign(v.Name, value);
-
-        await Error(equals, "Invalid assignment target.");
-        return expression;
-    }
-
-
+       
     private async Task<IExpression> Primary()
     {
         if (this.Match(TokenType.False))

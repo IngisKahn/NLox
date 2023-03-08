@@ -1,3 +1,18 @@
-﻿namespace NLox.Interpreter.Expressions;
+﻿namespace NLox.Interpreter
+{
+    using Expressions;
 
-public record Literal(object? Value) : IExpression;
+    namespace Expressions
+    {
+        public record Literal(object? Value) : IExpression;
+    }
+
+    public partial class Interpreter
+    {
+        private object? EvaluateExpression(Literal literal) => literal.Value;
+    }
+
+    //public partial class Resolver 
+    //{
+    //}
+}
