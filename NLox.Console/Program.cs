@@ -18,16 +18,15 @@ var hadError = false;
 Interpreter interpreter = new();
 
 await Run("""
-    var a = "global";
-    {
-      fun showA() {
-        print a;
-      }
-
-      showA();
-      var a = "block";
-      showA();
+    fun fib(n) {
+      if (n < 2) return n;
+      return fib(n - 1) + fib(n - 2); 
     }
+
+    var before = clock();
+    print fib(35);
+    var after = clock();
+    print after - before;
     """);
 
 

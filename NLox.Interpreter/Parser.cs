@@ -26,7 +26,8 @@ public partial class Parser
     {
         try
         {
-            return await (this.Match(TokenType.Var) 
+            return await (this.Match(TokenType.Class) ? Class() :
+                this.Match(TokenType.Var) 
                               ? VariableDeclaration() 
                               : this.Match(TokenType.Fun) 
                                 ? Function("function") 
