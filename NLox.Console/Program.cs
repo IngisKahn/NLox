@@ -17,11 +17,14 @@ var hadError = false;
 Interpreter interpreter = new();
 
 await Run("""
-    fun sayHi(first, last) {
-      print "Hi, " + first + " " + last + "!";
+    fun fib(n) {
+      if (n <= 1) return n;
+      return fib(n - 2) + fib(n - 1);
     }
 
-    sayHi("Dear", "Reader");
+    for (var i = 0; i < 20; i = i + 1) {
+      print fib(i);
+    }
     """);
 
 

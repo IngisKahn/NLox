@@ -72,6 +72,7 @@ public class Parser
         this.Match(TokenType.For) ? this.For() :
         this.Match(TokenType.If) ? this.If() :
         this.Match(TokenType.Print) ? this.PrintStatement() :
+        this.Match(TokenType.Return) ? this.ReturnStatement() :
         this.Match(TokenType.While) ? this.WhileStatement() :
         this.Match(TokenType.LeftBrace) ? this.Block() : this.ExpressionStatement();
     private async Task<IStatement> ControlFlowStatement()
@@ -128,6 +129,15 @@ public class Parser
             throw new ParsingException("Expect expression after 'print'");
         await this.Consume(TokenType.Semicolon, "Expect ';' after expression");
         return new PrintStatement(value);
+    }
+
+    private async Task<IStatement> ReturnStatement()
+    {
+        var keyword = this.Previous;
+        var value = this.Check(TokenType.Semicolon) ? null : await this.Expression();
+
+        await this.Consume(TokenType.Semicolon, "Expect ';' after return value");
+        return new Return(keyword, value);
     }
 
     private async Task<IStatement> WhileStatement()

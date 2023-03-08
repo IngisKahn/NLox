@@ -14,10 +14,10 @@ public class CallableFunction : ICallable
         Scope scope = new(interpreter.Scope);
         for (var i = 0; i < this.declaration.Parameters.Count; i++)
             scope.Define(this.declaration.Parameters[i].Lexeme, arguments[i]);
-
+        interpreter.ReturnValue = null;
         interpreter.ExecuteBlock(this.declaration.Body, scope);
 
-        return null;
+        return interpreter.ReturnValue;
     }
 
     public override string ToString() => $"<fn {this.declaration.Name.Lexeme}>";

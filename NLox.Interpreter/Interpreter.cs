@@ -7,6 +7,7 @@ public class Interpreter
 {
     public Scope Globals { get; } = new();
     public Scope Scope { get; private set; }
+    public object? ReturnValue { get; set; }
 
     public Interpreter()
     {
@@ -18,14 +19,15 @@ public class Interpreter
     {
         None,
         Break,
-        Continue
+        Continue,
+        Return
     }
 
     private BreakMode breakMode;
 
     public void Interpret(IStatement statement)
     {
-        if (this.breakMode == BreakMode.None || statement is LoopStatement)
+        if (this.breakMode == BreakMode.None || statement is LoopStatement && this.breakMode != BreakMode.Return)
             this.EvaluateStatement(statement);
     }
 
@@ -91,7 +93,18 @@ public class Interpreter
 
         var arguments = call.Arguments.Select(this.Evaluate).Where(a => a != null).Select(a => a!).ToArray();
 
-        return callee.Call(this, arguments);
+        var result = callee.Call(this, arguments);
+        if (breakMode == BreakMode.Return)
+            breakMode = BreakMode.None;
+        return result;
+    }
+
+    private object? EvaluateStatement(Return returnStatement)
+    {
+        var value = returnStatement.Value != null ? this.Evaluate(returnStatement.Value) : null;
+        this.breakMode = BreakMode.Return;
+        this.ReturnValue = value;
+        return value;
     }
 
     private object? Evaluate(Variable variable) => this.Scope[variable.Name];
