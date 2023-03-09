@@ -6,12 +6,14 @@ public class CallableFunction : ICallable
 {
     private readonly Function declaration;
     private readonly Scope closure;
+    private readonly bool isInitializer;
     public int Arity => this.declaration.Parameters.Count;
 
-    public CallableFunction(Function declaration, Scope closure)
+    public CallableFunction(Function declaration, Scope closure, bool isInitializer)
     {
         this.declaration = declaration;
         this.closure = closure;
+        this.isInitializer = isInitializer;
     }
 
     public object? Call(Interpreter interpreter, IList<object> arguments)
@@ -21,8 +23,8 @@ public class CallableFunction : ICallable
             scope.Define(this.declaration.Parameters[i].Lexeme, arguments[i]);
         interpreter.ReturnValue = null;
         interpreter.ExecuteBlock(this.declaration.Body, scope);
-
-        return interpreter.ReturnValue;
+        
+        return this.isInitializer ? this.closure.GetAt(0, "this") : interpreter.ReturnValue;
     }
 
     public override string ToString() => $"<fn {this.declaration.Name.Lexeme}>";
@@ -31,6 +33,6 @@ public class CallableFunction : ICallable
     {
         Scope scope = new(this.closure);
         scope.Define("this", instance);
-        return new(this.declaration, scope);
+        return new(this.declaration, scope, this.isInitializer);
     }
 }

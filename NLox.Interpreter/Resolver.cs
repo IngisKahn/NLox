@@ -14,6 +14,7 @@ public partial class Resolver
     {
         None,
         Function,
+        Initializer,
         Method
     }
     private enum ClassType

@@ -37,8 +37,11 @@
         {
             if (currentFunction == FunctionType.None)
                 throw new RuntimeException(returnStatement.keyword, "Can't return from top-level code.");
-            if (returnStatement.Value != null)
-                this.Resolve(returnStatement.Value);
+            if (returnStatement.Value == null)
+                return;
+            if (currentFunction == FunctionType.Initializer)
+                throw new RuntimeException(returnStatement.keyword, "Can't return a value from an initializer.");
+            this.Resolve(returnStatement.Value);
         }
     }
 }

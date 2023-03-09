@@ -31,7 +31,7 @@
         {
             this.Scope.Define(@class.Name.Lexeme, null);
             
-            ClassCallable c = new(@class.Name.Lexeme, @class.Methods.ToDictionary(m => m.Name.Lexeme, m => new CallableFunction(m, this.Scope)));
+            ClassCallable c = new(@class.Name.Lexeme, @class.Methods.ToDictionary(m => m.Name.Lexeme, m => new CallableFunction(m, this.Scope, m.Name.Lexeme == "init")));
             this.Scope.Assign(@class.Name, c);
         }
     }
@@ -49,7 +49,7 @@
             this.scopes.Peek()["this"] = true;
 
             foreach (var method in @class.Methods)
-                this.ResolveFunction(method, FunctionType.Method);
+                this.ResolveFunction(method, method.Name.Lexeme == "init" ? FunctionType.Initializer : FunctionType.Method);
 
             this.EndScope();
 

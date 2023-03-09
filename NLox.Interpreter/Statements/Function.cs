@@ -31,7 +31,7 @@
     public partial class Interpreter
     {
         private void EvaluateStatement(Function function) =>
-            this.Scope.Define(function.Name.Lexeme, new CallableFunction(function, this.Scope));
+            this.Scope.Define(function.Name.Lexeme, new CallableFunction(function, this.Scope, false));
     }
 
     public partial class Resolver 
