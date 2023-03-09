@@ -40,11 +40,20 @@
     {
         private void ResolveStatement(Class @class)
         {
+            var enclosingClass = this.currentClass;
+            this.currentClass = ClassType.Class;
             this.Declare(@class.Name);
             this.Define(@class.Name);
 
+            this.BeginScope();
+            this.scopes.Peek()["this"] = true;
+
             foreach (var method in @class.Methods)
                 this.ResolveFunction(method, FunctionType.Method);
+
+            this.EndScope();
+
+            this.currentClass = enclosingClass;
         }
     }
 }

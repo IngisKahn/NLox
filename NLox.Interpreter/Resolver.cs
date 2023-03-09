@@ -8,12 +8,18 @@ public partial class Resolver
     private readonly Interpreter interpreter;
     private readonly Stack<Dictionary<string, bool>> scopes = new();
     private FunctionType currentFunction = 0;
+    private ClassType currentClass = 0;
 
     private enum FunctionType
     {
         None,
         Function,
         Method
+    }
+    private enum ClassType
+    {
+        None,
+        Class
     }
 
     public Resolver(Interpreter interpreter) => this.interpreter = interpreter;

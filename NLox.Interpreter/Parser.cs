@@ -89,6 +89,9 @@ public partial class Parser
         if (this.Match(TokenType.Number, TokenType.String))
             return new Literal(this.Previous.Literal);
 
+        if (this.Match(TokenType.This))
+            return new This(this.Previous);
+
         if (this.Match(TokenType.Identifier))
             return new Variable(this.Previous);
 

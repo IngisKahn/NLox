@@ -26,4 +26,11 @@ public class CallableFunction : ICallable
     }
 
     public override string ToString() => $"<fn {this.declaration.Name.Lexeme}>";
+
+    public CallableFunction Bind(Instance instance)
+    {
+        Scope scope = new(this.closure);
+        scope.Define("this", instance);
+        return new(this.declaration, scope);
+    }
 }
