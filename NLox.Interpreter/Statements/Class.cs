@@ -38,7 +38,7 @@
         private void EvaluateStatement(Class @class)
         {
             ClassCallable? superclass = null;
-            if (@class.Superclass != null) 
+            if (@class.Superclass != null)
             {
                 superclass = this.Evaluate(@class.Superclass) as ClassCallable;
                 if (superclass is null)
@@ -46,10 +46,18 @@
             }
 
             this.Scope.Define(@class.Name.Lexeme, null);
-            
+
+            if (@class.Superclass != null)
+            {
+                this.Scope = new(this.Scope);
+                this.Scope.Define("super", superclass);
+            }
+
             ClassCallable c = new(@class.Name.Lexeme, superclass, @class.Methods.ToDictionary(m => m.Name.Lexeme, m => new CallableFunction(m, this.Scope, m.Name.Lexeme == "init")));
 
 
+            if (@class.Superclass != null && this.Scope.Enclosing != null)
+                this.Scope = this.Scope.Enclosing;
 
             this.Scope.Assign(@class.Name, c);
         }
@@ -66,9 +74,13 @@
 
             if (@class.Superclass != null)
             {
+                this.currentClass = ClassType.Subclass;
                 if (@class.Name.Lexeme == @class.Superclass.Name.Lexeme)
                     throw new RuntimeException(@class.Superclass.Name, "A class can't inherit from itself.");
                 this.Resolve(@class.Superclass);
+
+                this.BeginScope();
+                this.scopes.Peek()["super"] = true;
             }
 
             this.BeginScope();
@@ -78,6 +90,9 @@
                 this.ResolveFunction(method, method.Name.Lexeme == "init" ? FunctionType.Initializer : FunctionType.Method);
 
             this.EndScope();
+
+            if (@class.Superclass != null)
+                this.EndScope();
 
             this.currentClass = enclosingClass;
         }

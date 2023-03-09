@@ -89,6 +89,14 @@ public partial class Parser
         if (this.Match(TokenType.Number, TokenType.String))
             return new Literal(this.Previous.Literal);
 
+        if (this.Match(TokenType.Super))
+        {
+            var keyword = this.Previous;
+            await this.Consume(TokenType.Dot, "Expect '.' after 'super'.");
+            var method = await this.Consume(TokenType.Identifier, "Expect superclass method name.");
+            return new Super(keyword, method);
+        }
+
         if (this.Match(TokenType.This))
             return new This(this.Previous);
 

@@ -20,7 +20,8 @@ public partial class Resolver
     private enum ClassType
     {
         None,
-        Class
+        Class,
+        Subclass
     }
 
     public Resolver(Interpreter interpreter) => this.interpreter = interpreter;
