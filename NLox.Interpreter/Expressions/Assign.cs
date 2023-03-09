@@ -21,6 +21,8 @@
 
             if (expression is Variable v)
                 return new Assign(v.Name, value);
+            else if (expression is Get g)
+                return new Set(g.Object, g.Name, value);
 
             await Error(equals, "Invalid assignment target.");
             return expression;

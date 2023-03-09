@@ -13,8 +13,16 @@
         {
             var expression = await this.Primary();
 
-            while (this.Match(TokenType.LeftParen))
-                expression = await this.FinishCall(expression);
+            for (; ; )
+                if (this.Match(TokenType.LeftParen))
+                    expression = await this.FinishCall(expression);
+                else if (this.Match(TokenType.Dot))
+                {
+                    var name = await this.Consume(TokenType.Identifier, "Exprect property name after '.'.");
+                    expression = new Get(expression, name);
+                }
+                else
+                    break;
 
             return expression;
         }
