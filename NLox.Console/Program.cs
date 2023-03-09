@@ -18,15 +18,13 @@ var hadError = false;
 Interpreter interpreter = new();
 
 await Run("""
-    fun fib(n) {
-      if (n < 2) return n;
-      return fib(n - 1) + fib(n - 2); 
+    class Bacon {
+      eat() {
+        print "Crunch crunch crunch!";
+      }
     }
 
-    var before = clock();
-    print fib(35);
-    var after = clock();
-    print after - before;
+    Bacon().eat(); // Prints "Crunch crunch crunch!".
     """);
 
 

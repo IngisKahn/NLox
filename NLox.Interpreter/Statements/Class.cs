@@ -30,7 +30,8 @@
         private void EvaluateStatement(Class @class)
         {
             this.Scope.Define(@class.Name.Lexeme, null);
-            ClassCallable c = new(@class.Name.Lexeme);
+            
+            ClassCallable c = new(@class.Name.Lexeme, @class.Methods.ToDictionary(m => m.Name.Lexeme, m => new CallableFunction(m, this.Scope)));
             this.Scope.Assign(@class.Name, c);
         }
     }
@@ -41,6 +42,9 @@
         {
             this.Declare(@class.Name);
             this.Define(@class.Name);
+
+            foreach (var method in @class.Methods)
+                this.ResolveFunction(method, FunctionType.Method);
         }
     }
 }

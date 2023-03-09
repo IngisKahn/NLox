@@ -8,7 +8,7 @@ public record Instance(ClassCallable Class)
 
     public object? this[Token name]
     {
-        get => this.fields.TryGetValue(name.Lexeme, out var value) ? value : throw new RuntimeException(name, $"Undefined property '{name.Lexeme}'.");
+        get => this.fields.TryGetValue(name.Lexeme, out var value) ? value : this.Class.FindMethod(name.Lexeme) ?? throw new RuntimeException(name, $"Undefined property '{name.Lexeme}'.");
         set => this.fields[name.Lexeme] = value;
     }
 }

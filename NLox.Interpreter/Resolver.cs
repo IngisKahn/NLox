@@ -12,7 +12,8 @@ public partial class Resolver
     private enum FunctionType
     {
         None,
-        Function
+        Function,
+        Method
     }
 
     public Resolver(Interpreter interpreter) => this.interpreter = interpreter;
