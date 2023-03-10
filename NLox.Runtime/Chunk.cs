@@ -1,36 +1,23 @@
 ﻿namespace NLox.Runtime;
-
-using System.Runtime.InteropServices;
-
-public sealed unsafe class Chunk : IDisposable
+public sealed class Chunk : IDisposable
 {
-    public int Count { get; private set; }
-    public nuint Capacity { get; private set; }
-    private byte* code;
+    private readonly Vector<byte> code = new();
 
-    public void Write(byte b)
-    {
-        if (this.Capacity < (nuint)this.Count + 1)
-        {
-            var oldCapacity = this.Capacity;
-            this.Capacity = Memory.GrowCapacity(oldCapacity);
-            this.code = Memory.GrowArray(this.code, oldCapacity, this.Capacity);
-        }
-        this.code[this.Count++] = b;
-    }
+    public int Count => this.code.Count;
 
+    public Vector<Value> Constants { get; } = new();
+
+    public void Write(byte b) => this.code.Write(b);
     public byte this[int index] => this.code[index];
-
-    public void Free()
+    public int AddConstant(Value value)
     {
-        Memory.FreeArray(this.code, this.Capacity);
-        this.code = null;
-        this.Count = (int)(this.Capacity = 0);
+        this.Constants.Write(value);
+        return this.Constants.Count - 1;
     }
 
     public void Dispose()
     {
-        if (this.code != null)
-            NativeMemory.Free(this.code);
+        this.code.Dispose();
+        this.Constants.Dispose();
     }
 }
