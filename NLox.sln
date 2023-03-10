@@ -7,6 +7,10 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NLox.Console", "NLox.Consol
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NLox.Interpreter", "NLox.Interpreter\NLox.Interpreter.csproj", "{ADCC0202-EDA5-45D5-A8B3-6F8025AE3AD7}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NLox.Runtime", "NLox.Runtime\NLox.Runtime.csproj", "{9E021491-5AE8-4BCD-9FD5-C5EBAC51BB28}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NLox.Runtime.Console", "NLox.Runtime.Console\NLox.Runtime.Console.csproj", "{B117A20B-F860-40C3-B6CB-10AC19F94675}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -21,6 +25,14 @@ Global
 		{ADCC0202-EDA5-45D5-A8B3-6F8025AE3AD7}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{ADCC0202-EDA5-45D5-A8B3-6F8025AE3AD7}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{ADCC0202-EDA5-45D5-A8B3-6F8025AE3AD7}.Release|Any CPU.Build.0 = Release|Any CPU
+		{9E021491-5AE8-4BCD-9FD5-C5EBAC51BB28}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{9E021491-5AE8-4BCD-9FD5-C5EBAC51BB28}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{9E021491-5AE8-4BCD-9FD5-C5EBAC51BB28}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{9E021491-5AE8-4BCD-9FD5-C5EBAC51BB28}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B117A20B-F860-40C3-B6CB-10AC19F94675}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B117A20B-F860-40C3-B6CB-10AC19F94675}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B117A20B-F860-40C3-B6CB-10AC19F94675}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B117A20B-F860-40C3-B6CB-10AC19F94675}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
