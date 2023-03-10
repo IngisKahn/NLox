@@ -14,7 +14,7 @@
             var distance = this.locals[super];
             var superclass = (ClassCallable)this.Scope.GetAt(distance, "super")!;
             var @object = (Instance)this.Scope.GetAt(distance - 1, "this")!;
-            var method = superclass.FindMethod(super.Method.Lexeme);\
+            var method = superclass.FindMethod(super.Method.Lexeme);
             return method == null
                 ? throw new RuntimeException(super.Method, $"Undefined property '{super.Method.Lexeme}'.")
                 : (object)method.Bind(@object);

@@ -2,14 +2,16 @@
 
 using System.Runtime.InteropServices;
 
-internal static class Memory
+internal unsafe static class Memory
 {
-    public static int GrowCapacity(int capacity) => capacity < 4 ? 4 : capacity << 1;
+    public static nuint GrowCapacity(nuint capacity) => capacity < 4 ? 4 : capacity << 1;
 
-    public static unsafe T* GrowArray<T>(T* pointer, nuint oldCount, nuint newCount) where T : unmanaged =>
+    public static T* GrowArray<T>(T* pointer, nuint oldCount, nuint newCount) where T : unmanaged =>
         (T*)Reallocate(pointer, (nuint)sizeof(T) * oldCount, (nuint)sizeof(T) * newCount);
+    public static T* FreeArray<T>(T* pointer, nuint oldCount) where T : unmanaged =>
+        (T*)Reallocate(pointer, (nuint)sizeof(T) * oldCount, 0);
 
-    public static unsafe void* Reallocate(void* pointer, nuint oldSize, nuint newSize)
+    public static void* Reallocate(void* pointer, nuint oldSize, nuint newSize)
     {
         if (newSize == 0)
         {
