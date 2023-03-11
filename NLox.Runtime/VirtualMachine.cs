@@ -81,6 +81,12 @@ public unsafe class VirtualMachine : IDisposable
                     var constant = this.ReadConstant(chunk);
                     this.Push(constant);
                     break;
+                case OpCode.Add:
+                case OpCode.Subtract:
+                case OpCode.Multiply:
+                case OpCode.Divide:
+                    this.BinaryOp(instruction);
+                    break;
                 case OpCode.Negate:
                     this.Push(-this.Pop());
                     break;
@@ -92,6 +98,21 @@ public unsafe class VirtualMachine : IDisposable
                     return Runtime.InterpretResult.RuntimeError;
             }
         }
+    }
+
+    private void BinaryOp(OpCode opCode)
+    {
+        var b = this.Pop();
+        var a = this.Pop();
+
+        this.Push(opCode switch
+        {
+            OpCode.Add => a + b,
+            OpCode.Subtract => a - b,
+            OpCode.Multiply => a * b,
+            OpCode.Divide => a / b,
+            _ => throw new InvalidOperationException()
+        });
     }
 }
 

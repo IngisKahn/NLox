@@ -24,8 +24,11 @@ public static class Common
         {
             case OpCode.Constant:
                 return ConstantInstruction(instruction.ToString(), chunk, offset);
+            case OpCode.Add:
+            case OpCode.Subtract:
+            case OpCode.Multiply:
+            case OpCode.Divide:
             case OpCode.Negate:
-                return SimpleInstruction(instruction.ToString(), offset);
             case OpCode.Return:
                 return SimpleInstruction(instruction.ToString(), offset);
             default:
