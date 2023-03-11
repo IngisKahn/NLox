@@ -1,31 +1,46 @@
 ﻿namespace NLox.Runtime;
 
+using System.Runtime.InteropServices;
+
 public unsafe class VirtualMachine : IDisposable
 {
-    private Chunk chunk;
+    private const int stackMax = 256;
+
+    private Chunk? chunk;
     private byte* ip;
+    private readonly Value* stack;
+    private Value* stackTop;
     private bool disposedValue;
 
     public VirtualMachine()
-    { }
+    {
+        this.stack = (Value*)NativeMemory.Alloc(VirtualMachine.stackMax, (nuint)sizeof(Value));
+        this.ResetStack();
+    }
+
+    private void ResetStack() => this.stackTop = this.stack;
+
+    private void Push(Value value) => *this.stackTop++ = value;
+
+    private Value Pop() => *--this.stackTop;
 
     protected virtual void Dispose(bool disposing)
     {
-        if (!disposedValue)
+        if (disposedValue)
+            return;
+        if (disposing)
         {
-            if (disposing)
-            {
-                this.chunk.Dispose();
-            }
-            disposedValue = true;
+            this.chunk?.Dispose();
         }
+        NativeMemory.Free(this.stack);
+        disposedValue = true;
     }
 
-     ~VirtualMachine()
-     {
-         // Do not change this code. Put cleanup code in 'Dispose(bool disposing)' method
-         Dispose(disposing: false);
-     }
+    ~VirtualMachine()
+    {
+        // Do not change this code. Put cleanup code in 'Dispose(bool disposing)' method
+        Dispose(disposing: false);
+    }
 
     public void Dispose()
     {
@@ -49,24 +64,32 @@ public unsafe class VirtualMachine : IDisposable
         for (; ; )
         {
 #if DEBUG_TRACE_EXECUTION
+            Console.Write("          ");
+            for (var slot = this.stack; slot < this.stackTop; slot++) 
+            {
+              Console.Write("[ ");
+              Common.PrintValue(*slot);
+              Console.Write(" ]");
+            }
+            Console.WriteLine();
             Common.DisassembleInstruction(this.chunk, (int)(this.ip - this.chunk.Code.Data));
 #endif
             var instruction = (OpCode)this.ReadByte();
-            switch (instruction) 
+            switch (instruction)
             {
                 case OpCode.Constant:
                     var constant = this.ReadConstant();
-                    VirtualMachine.PrintValue(constant);
-                    Console.WriteLine();
+                    this.Push(constant);
                     break;
                 case OpCode.Return:
+                    Common.PrintValue(this.Pop());
+                    Console.WriteLine();
                     return Runtime.InterpretResult.Ok;
                 default:
                     return Runtime.InterpretResult.RuntimeError;
             }
         }
     }
-    private static void PrintValue(Value value) => Console.Write(value);
 }
 
 public enum InterpretResult
