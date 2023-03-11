@@ -1,12 +1,14 @@
 ﻿using NLox.Runtime;
-
+using VirtualMachine vm = new();
 using var chunk = new Chunk();
 var constant = chunk.AddConstant(1.2);
-chunk.Write((byte)OpCode.Constant);
-chunk.Write((byte)constant);
-chunk.Write((byte)OpCode.Return);
+chunk.Write((byte)OpCode.Constant, 123);
+chunk.Write((byte)constant, 123);
+chunk.Write((byte)OpCode.Return, 123);
 
 DisassembleChunk(chunk, "test chunk");
+
+vm.Interpret(chunk);
 
 void DisassembleChunk(Chunk chunk, string name)
 {
@@ -18,7 +20,12 @@ void DisassembleChunk(Chunk chunk, string name)
 
 int DisassembleInstruction(Chunk chunk, int offset)
 {
-    Console.Write($"{offset:0000} ");
+    Console.Write($"{offset:0000} "); 
+    if (offset > 0 &&
+      chunk.Lines[offset] == chunk.Lines[offset - 1])
+        Console.Write("   | ");
+    else
+        Console.Write($"{chunk.Lines[offset],4} ");
 
     var instruction = (OpCode)chunk[offset];
     switch (instruction)
@@ -42,7 +49,7 @@ int SimpleInstruction(string name, int offset)
 int ConstantInstruction(string name, Chunk chunk, int offset)
 {
     var constant = chunk[offset + 1];
-    Console.Write($"{name,-16} {constant:0000} '");
+    Console.Write($"{name,-16} {constant,4} '");
     PrintValue(chunk.Constants[constant]);
     Console.WriteLine('\'');
     return offset + 2;

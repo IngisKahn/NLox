@@ -6,7 +6,7 @@ public sealed unsafe class Vector<T> : IDisposable where T : unmanaged
 {
     public int Count { get; private set; }
     public nuint Capacity { get; private set; }
-    private T* code;
+    private T* data;
     private bool disposedValue;
 
     public void Write(T b)
@@ -15,17 +15,17 @@ public sealed unsafe class Vector<T> : IDisposable where T : unmanaged
         {
             var oldCapacity = this.Capacity;
             this.Capacity = Memory.GrowCapacity(oldCapacity);
-            this.code = Memory.GrowArray(this.code, oldCapacity, this.Capacity);
+            this.data = Memory.GrowArray(this.data, oldCapacity, this.Capacity);
         }
-        this.code[this.Count++] = b;
+        this.data[this.Count++] = b;
     }
 
-    public T this[int index] => this.code[index];
+    public T this[int index] => this.data[index];
 
     public void Free()
     {
-        Memory.FreeArray(this.code, this.Capacity);
-        this.code = null;
+        Memory.FreeArray(this.data, this.Capacity);
+        this.data = null;
         this.Count = (int)(this.Capacity = 0);
     }
     private void Dispose(bool disposing)
@@ -37,8 +37,8 @@ public sealed unsafe class Vector<T> : IDisposable where T : unmanaged
 
             }
 
-            if (this.code != null)
-                NativeMemory.Free(this.code);
+            if (this.data != null)
+                NativeMemory.Free(this.data);
 
             disposedValue = true;
         }
