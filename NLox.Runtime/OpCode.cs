@@ -2,5 +2,6 @@
 public enum OpCode : byte
 {
     Constant,
+    Negate,
     Return
 }

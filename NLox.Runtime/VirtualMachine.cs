@@ -1,12 +1,13 @@
-﻿namespace NLox.Runtime;
+﻿#define DEBUG_TRACE_EXECUTION
+namespace NLox.Runtime;
 
 using System.Runtime.InteropServices;
+
 
 public unsafe class VirtualMachine : IDisposable
 {
     private const int stackMax = 256;
 
-    private Chunk? chunk;
     private byte* ip;
     private readonly Value* stack;
     private Value* stackTop;
@@ -30,7 +31,7 @@ public unsafe class VirtualMachine : IDisposable
             return;
         if (disposing)
         {
-            this.chunk?.Dispose();
+
         }
         NativeMemory.Free(this.stack);
         disposedValue = true;
@@ -49,17 +50,16 @@ public unsafe class VirtualMachine : IDisposable
         GC.SuppressFinalize(this);
     }
 
-    public InterpretResult InterpretResult(Chunk chunk)
+    public InterpretResult Interpret(Chunk chunk)
     {
-        this.chunk = chunk;
         this.ip = chunk.Code.Data;
-        return this.Run();
+        return this.Run(chunk);
     }
 
     private byte ReadByte() => *this.ip++;
-    private Value ReadConstant() => this.chunk.Constants[this.ReadByte()];
+    private Value ReadConstant(Chunk chunk) => chunk.Constants[this.ReadByte()];
 
-    private InterpretResult Run()
+    private InterpretResult Run(Chunk chunk)
     {
         for (; ; )
         {
@@ -72,14 +72,17 @@ public unsafe class VirtualMachine : IDisposable
               Console.Write(" ]");
             }
             Console.WriteLine();
-            Common.DisassembleInstruction(this.chunk, (int)(this.ip - this.chunk.Code.Data));
+            Common.DisassembleInstruction(chunk, (int)(this.ip - chunk.Code.Data));
 #endif
             var instruction = (OpCode)this.ReadByte();
             switch (instruction)
             {
                 case OpCode.Constant:
-                    var constant = this.ReadConstant();
+                    var constant = this.ReadConstant(chunk);
                     this.Push(constant);
+                    break;
+                case OpCode.Negate:
+                    this.Push(-this.Pop());
                     break;
                 case OpCode.Return:
                     Common.PrintValue(this.Pop());
