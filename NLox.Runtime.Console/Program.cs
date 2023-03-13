@@ -1,26 +1,57 @@
 ﻿using NLox.Runtime;
+using System.Text;
 using static NLox.Runtime.Common;
 using VirtualMachine vm = new();
-using var chunk = new Chunk();
-var constant = chunk.AddConstant(1.2);
-chunk.Write((byte)OpCode.Constant, 123);
-chunk.Write((byte)constant, 123); 
-constant = chunk.AddConstant(3.4);
-chunk.Write((byte)OpCode.Constant, 123);
-chunk.Write((byte)constant, 123);
-chunk.Write((byte)OpCode.Add, 123);
 
-constant = chunk.AddConstant(5.6);
-chunk.Write((byte)OpCode.Constant, 123);
-chunk.Write((byte)constant, 123);
+if (args.Length == 1)
+    await Repl();
+else if (args.Length == 2)
+    await RunFile(args[1]);
+else
+{
+    Console.WriteLine("Usage: NLox [path]");
+    Environment.Exit(64);
+}
 
+async Task Repl()
+{
+    var reader = Console.In;
 
-chunk.Write((byte)OpCode.Divide, 123);
+    for (; ; )
+    {
+        Console.Write("> ");
+        var line = await reader.ReadLineAsync();
+        if (line == null)
+        {
+            Console.WriteLine();
+            break;
+        }
+        try
+        {
+            Interpret(line);
+        }
+        catch (Exception e) 
+        {
+            Console.WriteLine(e.Message);
+        }
+    }
+}
 
-chunk.Write((byte)OpCode.Negate, 123);
-chunk.Write((byte)OpCode.Return, 123);
+async Task RunFile(string path)
+{
+    var source = await File.ReadAllTextAsync(path);
+    try
+    {
+        Interpret(source);
+    }
+    catch (RuntimeException)
+    {
+        Environment.Exit(70);
+    }
+    catch (CompileException)
+    {
+        Environment.Exit(65);
+    }
 
-DisassembleChunk(chunk, "test chunk");
-
-vm.Interpret(chunk);
+}
 

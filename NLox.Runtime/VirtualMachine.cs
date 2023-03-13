@@ -11,6 +11,8 @@ public unsafe class VirtualMachine : IDisposable
     private byte* ip;
     private readonly Value* stack;
     private Value* stackTop;
+
+    private readonly Compiler compiler = new();
     private bool disposedValue;
 
     public VirtualMachine()
@@ -50,26 +52,31 @@ public unsafe class VirtualMachine : IDisposable
         GC.SuppressFinalize(this);
     }
 
-    public InterpretResult Interpret(Chunk chunk)
+    public void Interpret(string source)
+    {
+        this.compiler.Compile(source);
+    }
+
+    public void Interpret(Chunk chunk)
     {
         this.ip = chunk.Code.Data;
-        return this.Run(chunk);
+        this.Run(chunk);
     }
 
     private byte ReadByte() => *this.ip++;
     private Value ReadConstant(Chunk chunk) => chunk.Constants[this.ReadByte()];
 
-    private InterpretResult Run(Chunk chunk)
+    private void Run(Chunk chunk)
     {
         for (; ; )
         {
 #if DEBUG_TRACE_EXECUTION
             Console.Write("          ");
-            for (var slot = this.stack; slot < this.stackTop; slot++) 
+            for (var slot = this.stack; slot < this.stackTop; slot++)
             {
-              Console.Write("[ ");
-              Common.PrintValue(*slot);
-              Console.Write(" ]");
+                Console.Write("[ ");
+                Common.PrintValue(*slot);
+                Console.Write(" ]");
             }
             Console.WriteLine();
             Common.DisassembleInstruction(chunk, (int)(this.ip - chunk.Code.Data));
@@ -88,14 +95,14 @@ public unsafe class VirtualMachine : IDisposable
                     this.BinaryOp(instruction);
                     break;
                 case OpCode.Negate:
-                    this.Push(-this.Pop());
+                    this.stackTop[-1] = -this.stackTop[-1];
                     break;
                 case OpCode.Return:
                     Common.PrintValue(this.Pop());
                     Console.WriteLine();
-                    return Runtime.InterpretResult.Ok;
+                    return;
                 default:
-                    return Runtime.InterpretResult.RuntimeError;
+                    throw new RuntimeException("Invalid opcode, corrupt program");
             }
         }
     }
@@ -103,22 +110,15 @@ public unsafe class VirtualMachine : IDisposable
     private void BinaryOp(OpCode opCode)
     {
         var b = this.Pop();
-        var a = this.Pop();
+        var a = this.stackTop[-1];
 
-        this.Push(opCode switch
+        this.stackTop[-1] = opCode switch
         {
             OpCode.Add => a + b,
             OpCode.Subtract => a - b,
             OpCode.Multiply => a * b,
             OpCode.Divide => a / b,
             _ => throw new InvalidOperationException()
-        });
+        };
     }
-}
-
-public enum InterpretResult
-{
-    Ok,
-    CompileError,
-    RuntimeError
 }
