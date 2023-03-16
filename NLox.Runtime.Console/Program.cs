@@ -28,7 +28,7 @@ async Task Repl()
         }
         try
         {
-            Interpret(line);
+            vm.Interpret(line);
         }
         catch (Exception e) 
         {
@@ -42,7 +42,7 @@ async Task RunFile(string path)
     var source = await File.ReadAllTextAsync(path);
     try
     {
-        Interpret(source);
+        vm.Interpret(source);
     }
     catch (RuntimeException)
     {

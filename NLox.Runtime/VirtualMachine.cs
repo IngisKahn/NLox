@@ -54,7 +54,11 @@ public unsafe class VirtualMachine : IDisposable
 
     public void Interpret(string source)
     {
-        this.compiler.Compile(source);
+        using Chunk chunk = new();
+        if (!this.compiler.Compile(source, chunk))
+            throw new CompileException();
+
+        this.Interpret(chunk);
     }
 
     public void Interpret(Chunk chunk)
