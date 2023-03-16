@@ -12,7 +12,6 @@ public unsafe class VirtualMachine : IDisposable
     private readonly Value* stack;
     private Value* stackTop;
 
-    private readonly Compiler compiler = new();
     private bool disposedValue;
 
     public VirtualMachine()
@@ -55,7 +54,7 @@ public unsafe class VirtualMachine : IDisposable
     public void Interpret(string source)
     {
         using Chunk chunk = new();
-        if (!this.compiler.Compile(source, chunk))
+        if (!new Compiler(source, chunk).Compile())
             throw new CompileException();
 
         this.Interpret(chunk);
@@ -92,14 +91,39 @@ public unsafe class VirtualMachine : IDisposable
                     var constant = this.ReadConstant(chunk);
                     this.Push(constant);
                     break;
+                case OpCode.Equal:
+                    {
+                        var b = this.Pop();
+                        this.Push(this.Pop().Equals(b));
+                    }
+                    break;
+                case OpCode.Greater:
+                case OpCode.Less:
                 case OpCode.Add:
                 case OpCode.Subtract:
                 case OpCode.Multiply:
                 case OpCode.Divide:
-                    this.BinaryOp(instruction);
+                    this.BinaryOp(chunk, instruction);
+                    break;
+                case OpCode.Not:
+                    *this.Peek(0) = IsFalsey(*this.Peek(0));
+                    break;
+                case OpCode.False:
+                    this.Push(false);
+                    break;
+                case OpCode.Nil:
+                    this.Push(new());
+                    break;
+                case OpCode.True:
+                    this.Push(true);
                     break;
                 case OpCode.Negate:
-                    this.stackTop[-1] = -this.stackTop[-1];
+                    if (!this.Peek(0)->IsNumber)
+                    {
+                        this.RuntimeError(chunk, "Operand must be a number.");
+                        throw new RuntimeException();
+                    }
+                    *this.Peek(0) = -*this.Peek(0);
                     break;
                 case OpCode.Return:
                     Common.PrintValue(this.Pop());
@@ -111,13 +135,35 @@ public unsafe class VirtualMachine : IDisposable
         }
     }
 
-    private void BinaryOp(OpCode opCode)
-    {
-        var b = this.Pop();
-        var a = this.stackTop[-1];
+    private static bool IsFalsey(Value value) => value.IsNil || value.IsBool && !value;
 
-        this.stackTop[-1] = opCode switch
+    private void RuntimeError(Chunk chunk, string message)
+    {
+        Console.Error.WriteLine(message);
+        var instruction = this.ip - chunk.Code.Data - 1;
+        var line = chunk.Lines[(int)instruction];
+
+        Console.Error.WriteLine($"[line {line}] in script");
+        this.ResetStack();
+    }
+
+    private Value* Peek(int distance) => this.stackTop - (distance + 1);
+
+    private void BinaryOp(Chunk chunk, OpCode opCode)
+    {
+        if (!this.Peek(0)->IsNumber || this.Peek(1)->IsNumber)
         {
+            this.RuntimeError(chunk, "Operands must be numbers.");
+            throw new RuntimeException();
+        }
+
+        var b = this.Pop();
+        var a = *this.Peek(0);
+
+        *this.Peek(0) = opCode switch
+        {
+            OpCode.Greater => a > b,
+            OpCode.Less => a < b,
             OpCode.Add => a + b,
             OpCode.Subtract => a - b,
             OpCode.Multiply => a * b,

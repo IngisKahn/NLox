@@ -1,4 +1,5 @@
 ﻿#define DEBUG_TRACE_EXECUTION
+#define DEBUG_PRINT_CODE
 namespace NLox.Runtime;
 
 public class Compiler
@@ -28,7 +29,14 @@ public class Compiler
         this.EmitByte(b2);
     }
 
-    private void EndCompiler() => this.EmitReturn();
+    private void EndCompiler()
+    {
+        this.EmitReturn();
+#if DEBUG_PRINT_CODE
+        if (!this.parser.HadError) 
+            Common.DisassembleChunk(this.chunk, "code");
+#endif
+    }
 
     private void EmitReturn() => this.EmitByte((byte)OpCode.Return);
 
@@ -63,6 +71,9 @@ public class Compiler
 
         switch (operatorType)
         {
+            case TokenType.Bang:
+                this.EmitByte((byte)OpCode.Not);
+                break;
             case TokenType.Minus:
                 this.EmitByte((byte)OpCode.Negate);
                 break;
@@ -73,10 +84,28 @@ public class Compiler
     private void Binary()
     {
         var operatorType = parser.Previous.Type;
-        this.ParsePrecedence((Precedence)(GetPrecedence(operatorType) + 1));
+        this.ParsePrecedence(GetPrecedence(operatorType) + 1);
 
         switch (operatorType)
         {
+            case TokenType.BangEqual:
+                this.EmitBytes((byte)OpCode.Equal, (byte)OpCode.Not);
+                break;
+            case TokenType.EqualEqual:
+                this.EmitByte((byte)OpCode.Equal);
+                break;
+            case TokenType.Greater:
+                this.EmitByte((byte)OpCode.Greater);
+                break;
+            case TokenType.GreaterEqual:
+                this.EmitBytes((byte)OpCode.Less, (byte)OpCode.Not);
+                break;
+            case TokenType.Less:
+                this.EmitByte((byte)OpCode.Less);
+                break;
+            case TokenType.LessEqual:
+                this.EmitBytes((byte)OpCode.Greater, (byte)OpCode.Not);
+                break;
             case TokenType.Plus:
                 this.EmitByte((byte)OpCode.Add);
                 break;
@@ -117,27 +146,57 @@ public class Compiler
     private Action? GetPrefix(TokenType type) =>
         type switch
         {
+            TokenType.Bang => this.Unary,
+            TokenType.False => this.Literal,
             TokenType.LeftParen => this.Grouping,
             TokenType.Minus => this.Unary,
+            TokenType.Nil => this.Literal,
             TokenType.Number => this.Number,
+            TokenType.True => this.Literal,
             _ => null
         };
 
     private Action? Infix(TokenType type) =>
         type switch 
         { 
-            TokenType.Minus or TokenType.Plus or TokenType.Star or TokenType.Slash => this.Binary, 
+            TokenType.EqualEqual or
+                TokenType.Greater or
+                TokenType.GreaterEqual or
+                TokenType.Less or
+                TokenType.LessEqual or
+            TokenType.BangEqual 
+                or TokenType.Minus 
+                or TokenType.Plus 
+                or TokenType.Star 
+                or TokenType.Slash => this.Binary, 
             _ => null
         };
 
     private Precedence GetPrecedence(TokenType type) =>
         type switch
         {
+            TokenType.Greater or TokenType.GreaterEqual or TokenType.Less or TokenType.LessEqual => Precedence.Comparison,
+            TokenType.BangEqual or TokenType.EqualEqual => Precedence.Equality,
             TokenType.Minus or TokenType.Plus => Precedence.Term,
             TokenType.Star or TokenType.Slash => Precedence.Factor,
             _ => Precedence.None
         };
 
+    private void Literal()
+    {
+        switch (this.parser.Previous.Type)
+        {
+            case TokenType.False:
+                this.EmitByte((byte)OpCode.False);
+                break;
+            case TokenType.Nil:
+                this.EmitByte((byte)OpCode.Nil);
+                break;
+            case TokenType.True:
+                this.EmitByte((byte)OpCode.True);
+                break;
+        }
+    }
 }
     internal enum Precedence
     {

@@ -24,6 +24,13 @@ public static class Common
         {
             case OpCode.Constant:
                 return ConstantInstruction(instruction.ToString(), chunk, offset);
+            case OpCode.Greater:
+            case OpCode.Less:
+            case OpCode.Equal:
+            case OpCode.False:
+            case OpCode.True:
+            case OpCode.Nil:
+            case OpCode.Not:
             case OpCode.Add:
             case OpCode.Subtract:
             case OpCode.Multiply:
@@ -52,6 +59,12 @@ public static class Common
         return offset + 2;
     }
 
-    public static void PrintValue(Value value) => Console.Write(value);
+    public static void PrintValue(Value value) =>
+        Console.Write(value.Type switch
+        {
+            ValueType.Bool => value ? "true" : "false",
+            ValueType.Number => (double)value,
+            _ => "nil"
+        });
 
 }
