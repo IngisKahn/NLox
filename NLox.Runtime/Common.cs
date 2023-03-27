@@ -1,4 +1,8 @@
-﻿namespace NLox.Runtime;
+﻿using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using System.Text;
+
+namespace NLox.Runtime;
 
 public static class Common
 {
@@ -55,16 +59,24 @@ public static class Common
         var constant = chunk[offset + 1];
         Console.Write($"{name,-16} {constant,4} '");
         PrintValue(chunk.Constants[constant]);
-        Console.WriteLine('\'');
+        Console.WriteLine('\''); Span<byte> a = new Span<byte>();
+        a.SequenceEqual(a);
         return offset + 2;
     }
 
-    public static void PrintValue(Value value) =>
+    public static unsafe void PrintValue(Value value) =>
         Console.Write(value.Type switch
         {
             ValueType.Bool => value ? "true" : "false",
             ValueType.Number => (double)value,
+            ValueType.Object => ObjectToString(value),
             _ => "nil"
         });
 
+    public static unsafe string ObjectToString(Object* value) =>
+        value->Type switch
+        {
+            ObjectType.String => Encoding.ASCII.GetString(((ObjectString*)value)->Chars, ((ObjectString*)value)->Length),
+            _ => "[ERROR]"
+        };
 }

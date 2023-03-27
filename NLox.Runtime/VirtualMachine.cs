@@ -11,6 +11,7 @@ public unsafe class VirtualMachine : IDisposable
     private byte* ip;
     private readonly Value* stack;
     private Value* stackTop;
+    private Object* objects;
 
     private bool disposedValue;
 
@@ -97,9 +98,22 @@ public unsafe class VirtualMachine : IDisposable
                         this.Push(this.Pop().Equals(b));
                     }
                     break;
+                case OpCode.Add:
+                    if (this.Peek(0)->IsString && this.Peek(1)->IsString)
+                        this.Concatenate();
+                    else if (this.Peek(0)->IsNumber && this.Peek(1)->IsNumber)
+                    {
+                        double b = this.Pop();
+                        *this.Peek(0) = *this.Peek(0) + b;
+                    }
+                    else
+                    {
+                        RuntimeError(chunk, "Operands must be two numbers or two strings.");
+                        return;
+                    }
+                    break;
                 case OpCode.Greater:
                 case OpCode.Less:
-                case OpCode.Add:
                 case OpCode.Subtract:
                 case OpCode.Multiply:
                 case OpCode.Divide:
@@ -135,6 +149,21 @@ public unsafe class VirtualMachine : IDisposable
         }
     }
 
+    private void Concatenate()
+    {
+        ObjectString* b = this.Pop();
+        ObjectString* a = *this.Peek(0);
+
+        var length = a->Length + b->Length;
+        var chars = Memory.Allocate<byte>((nuint)length);
+        Buffer.MemoryCopy(a->Chars, chars, (nuint)a->Length, (nuint)a->Length); 
+        Buffer.MemoryCopy(b->Chars, chars + a->Length, (nuint)b->Length, (nuint)b->Length);
+        *this.Peek(0) = TakeString(chars, length);
+    }
+
+    private static ObjectString* TakeString(byte* chars, int length) =>
+        AllocateString(chars, length);
+
     private static bool IsFalsey(Value value) => value.IsNil || value.IsBool && !value;
 
     private void RuntimeError(Chunk chunk, string message)
@@ -162,13 +191,20 @@ public unsafe class VirtualMachine : IDisposable
 
         *this.Peek(0) = opCode switch
         {
-            OpCode.Greater => a > b,
-            OpCode.Less => a < b,
+            OpCode.Greater => (double)a > b,
+            OpCode.Less => (double)a < b,
             OpCode.Add => a + b,
             OpCode.Subtract => a - b,
             OpCode.Multiply => a * b,
             OpCode.Divide => a / b,
             _ => throw new InvalidOperationException()
         };
+    }
+    public static ObjectString* AllocateString(byte* chars, int length)
+    {
+        var s = Object.AllocateObject<ObjectString>(ObjectType.String);
+        s->Length = length;
+        s->Chars = chars;
+        return s;
     }
 }

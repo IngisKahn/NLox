@@ -1,5 +1,7 @@
 ﻿#define DEBUG_TRACE_EXECUTION
 #define DEBUG_PRINT_CODE
+using System.Text;
+
 namespace NLox.Runtime;
 
 public class Compiler
@@ -153,6 +155,7 @@ public class Compiler
             TokenType.Nil => this.Literal,
             TokenType.Number => this.Number,
             TokenType.True => this.Literal,
+            TokenType.String => this.String,
             _ => null
         };
 
@@ -195,6 +198,17 @@ public class Compiler
             case TokenType.True:
                 this.EmitByte((byte)OpCode.True);
                 break;
+        }
+    }
+
+    private unsafe void String()
+    {
+        var p = this.parser.Previous;
+        var chars = Encoding.ASCII.GetBytes(p.Lexeme[(p.Start + 1)..(p.Start + p.Length - 2)]);
+        fixed (byte* pChars = &chars)
+        {
+            this.EmitConstant(
+                ObjectString.CopyString(pChars, this.parser.Previous.Length - 2));
         }
     }
 }

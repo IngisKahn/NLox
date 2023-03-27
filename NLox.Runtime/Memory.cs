@@ -11,6 +11,9 @@ internal unsafe static class Memory
     public static T* FreeArray<T>(T* pointer, nuint oldCount) where T : unmanaged =>
         (T*)Reallocate(pointer, (nuint)sizeof(T) * oldCount, 0);
 
+    public static T* Allocate<T>(nuint count) where T : unmanaged =>
+        (T*) Reallocate(null, 0, (nuint)sizeof(T) * count);
+
     public static void* Reallocate(void* pointer, nuint oldSize, nuint newSize)
     {
         if (newSize == 0)
