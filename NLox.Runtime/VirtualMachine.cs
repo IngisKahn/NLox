@@ -36,7 +36,19 @@ public unsafe class VirtualMachine : IDisposable
 
         }
         NativeMemory.Free(this.stack);
+        this.FreeObjects();
         disposedValue = true;
+    }
+
+    private void FreeObjects()
+    {
+        var o = this.objects;
+        while (o != null)
+        {
+            var next = o->Next;
+            Object.Free(o);
+            o = next;
+        }
     }
 
     ~VirtualMachine()
@@ -55,7 +67,7 @@ public unsafe class VirtualMachine : IDisposable
     public void Interpret(string source)
     {
         using Chunk chunk = new();
-        if (!new Compiler(source, chunk).Compile())
+        if (!new Compiler(source, chunk, RegisterObject).Compile())
             throw new CompileException();
 
         this.Interpret(chunk);
@@ -158,11 +170,16 @@ public unsafe class VirtualMachine : IDisposable
         var chars = Memory.Allocate<byte>((nuint)length);
         Buffer.MemoryCopy(a->Chars, chars, (nuint)a->Length, (nuint)a->Length); 
         Buffer.MemoryCopy(b->Chars, chars + a->Length, (nuint)b->Length, (nuint)b->Length);
-        *this.Peek(0) = TakeString(chars, length);
+        *this.Peek(0) = ObjectString.TakeString(chars, length, RegisterObject);
     }
 
-    private static ObjectString* TakeString(byte* chars, int length) =>
-        AllocateString(chars, length);
+    public void RegisterObject(IntPtr p)
+    {
+        var o = (Object*)p;
+        o->Next = this.objects;
+        this.objects = o;
+    }
+
 
     private static bool IsFalsey(Value value) => value.IsNil || value.IsBool && !value;
 
@@ -199,12 +216,5 @@ public unsafe class VirtualMachine : IDisposable
             OpCode.Divide => a / b,
             _ => throw new InvalidOperationException()
         };
-    }
-    public static ObjectString* AllocateString(byte* chars, int length)
-    {
-        var s = Object.AllocateObject<ObjectString>(ObjectType.String);
-        s->Length = length;
-        s->Chars = chars;
-        return s;
     }
 }

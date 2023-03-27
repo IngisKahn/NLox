@@ -4,15 +4,17 @@ using System.Text;
 
 namespace NLox.Runtime;
 
-public class Compiler
+public unsafe class Compiler
 {
     private readonly Parser parser;
     private readonly Chunk chunk;
+    private readonly Action<IntPtr> registerObject;
 
-    public Compiler(string source, Chunk chunk)
+    public Compiler(string source, Chunk chunk, Action<IntPtr> registerObject)
     {
         this.parser = new(source); 
         this.chunk = chunk;
+        this.registerObject = registerObject;
     }
 
     public bool Compile()
@@ -205,10 +207,10 @@ public class Compiler
     {
         var p = this.parser.Previous;
         var chars = Encoding.ASCII.GetBytes(p.Lexeme[(p.Start + 1)..(p.Start + p.Length - 2)]);
-        fixed (byte* pChars = &chars)
+        fixed (byte* pChars = chars)
         {
             this.EmitConstant(
-                ObjectString.CopyString(pChars, this.parser.Previous.Length - 2));
+                ObjectString.CopyString(pChars, this.parser.Previous.Length - 2, registerObject));
         }
     }
 }

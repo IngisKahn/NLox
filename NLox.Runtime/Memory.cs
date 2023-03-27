@@ -25,4 +25,7 @@ internal unsafe static class Memory
         var result = NativeMemory.Realloc(pointer, newSize);
         return result;
     }
+    public static void Free<T>(T* pointer) where T : unmanaged =>
+        Reallocate(pointer, (nuint)sizeof(T), 0);
+
 }
