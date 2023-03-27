@@ -11,67 +11,16 @@ public enum ValueType : byte
     Object
 }
 
-[StructLayout(LayoutKind.Sequential, Pack = 1)]
-public unsafe struct Object
-{
-    public Object* Next;
-    public ObjectType Type;
-
-    public static T* AllocateObject<T>(ObjectType type, Action<IntPtr> registerObject) where T : unmanaged
-    {
-        var o = (Object*)Memory.Reallocate(null, 0, (nuint)sizeof(T));
-        o->Type = type;
-        registerObject((IntPtr)o);
-        return (T*)o;
-    }
-
-    public static void Free(Object* o)
-    {
-        switch (o->Type)
-        {
-            case ObjectType.String:
-                {
-                    var s = (ObjectString*)o;
-                    Memory.FreeArray(s->Chars, (nuint)s->Length);
-                    Memory.Free(o);
-                }
-                break;
-        }
-    }
-}
-
 public enum ObjectType : byte
 {
     String
 }
 
-[StructLayout(LayoutKind.Sequential, Pack = 1)]
-public unsafe struct ObjectString
-{
-    public ObjectType Type;
-    public int Length;
-    public byte* Chars;
-
-    public static ObjectString* CopyString(byte* chars, int length, Action<IntPtr> registerObject)
-    {
-        var heapChars = Memory.Allocate<byte>((nuint)length);
-        NativeMemory.Copy(chars, heapChars, (nuint)length);
-        return AllocateString(heapChars, length, registerObject);
-    }
-    public static ObjectString* TakeString(byte* chars, int length, Action<IntPtr> registerObject) =>
-        AllocateString(chars, length, registerObject);
-    public static ObjectString* AllocateString(byte* chars, int length, Action<IntPtr> registerObject)
-    {
-        var s = Object.AllocateObject<ObjectString>(ObjectType.String, registerObject);
-        s->Length = length;
-        s->Chars = chars;
-        return s;
-    }
-}
-
 [StructLayout(LayoutKind.Explicit)]
 public readonly unsafe struct Value : IEquatable<Value>
 {
+    public static readonly Value Nil = new();
+
     [FieldOffset(8)]
     private readonly ValueType type;
 

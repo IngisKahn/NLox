@@ -2,9 +2,10 @@
 
 using System.Runtime.InteropServices;
 
-internal unsafe static class Memory
+internal static unsafe class Memory
 {
-    public static nuint GrowCapacity(nuint capacity) => capacity < 4 ? 4 : capacity << 1;
+    // should be a prime
+    public static nuint GrowCapacity(nuint capacity) => capacity < 5 ? 5 : (capacity << 1) | 1;
 
     public static T* GrowArray<T>(T* pointer, nuint oldCount, nuint newCount) where T : unmanaged =>
         (T*)Reallocate(pointer, (nuint)sizeof(T) * oldCount, (nuint)sizeof(T) * newCount);
