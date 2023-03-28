@@ -27,6 +27,9 @@ public static class Common
         switch (instruction)
         {
             case OpCode.Constant:
+            case OpCode.DefineGlobal:
+            case OpCode.GetGlobal:
+            case OpCode.SetGlobal:
                 return ConstantInstruction(instruction.ToString(), chunk, offset);
             case OpCode.Greater:
             case OpCode.Less:

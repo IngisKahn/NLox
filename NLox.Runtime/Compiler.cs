@@ -30,9 +30,44 @@ public unsafe class Compiler
 
     public void Declaration()
     {
-        this.Statement();
+        if (this.parser.Match(TokenType.Var))
+            this.VarDeclaration();
+        else
+            this.Statement();
         if (this.parser.PanicMode)
             parser.Synchronize();
+    }
+
+    private void VarDeclaration()
+    {
+        var global = this.ParseVariable("Expect variable name.");
+        if (this.parser.Match(TokenType.Equal))
+            this.Expression();
+        else
+            this.EmitByte((byte)OpCode.Nil);
+
+        this.parser.Consume(TokenType.Semicolon, "Expect ';' after variable declaration.");
+
+        this.DefineVariable(global);
+    }
+
+    private void DefineVariable(byte global) =>
+        this.EmitByte((byte) OpCode.DefineGlobal);
+
+    public byte ParseVariable(string errorMessage)
+    {
+        this.parser.Consume(TokenType.Identifier, errorMessage);
+        return this.IdentifierConstant(this.parser.Previous);
+    }
+
+    private byte IdentifierConstant(Token name)
+    {
+        var chars = Encoding.ASCII.GetBytes(name.Lexeme[name.Start..(name.Start + name.Length)]);
+        fixed (byte* pChars = chars)
+        {
+            return this.MakeConstant(
+                ObjectString.CopyString(pChars, this.parser.Previous.Length - 2, registerObject, strings));
+        }
     }
 
     public void Statement()
@@ -80,7 +115,7 @@ public unsafe class Compiler
         this.ParsePrecedence(Precedence.Comma);
     }
 
-    private void Number() => this.EmitConstant(double.Parse(parser.Previous.Lexeme));
+    private void Number(bool canAssign) => this.EmitConstant(double.Parse(parser.Previous.Lexeme));
 
     private void EmitConstant(Value value) => this.EmitBytes((byte)OpCode.Constant, this.MakeConstant(value));
 
@@ -93,12 +128,12 @@ public unsafe class Compiler
         return 0;
     }
 
-    private void Grouping()
+    private void Grouping(bool canAssign)
     {
         this.Expression();
         parser.Consume(TokenType.RightParen, "Expect ')' after expression.");
     }
-    private void Unary()
+    private void Unary(bool canAssign)
     {
         var operatorType = parser.Previous.Type;
 
@@ -116,7 +151,7 @@ public unsafe class Compiler
                 return;
         }
     }
-    private void Binary()
+    private void Binary(bool canAssign)
     {
         var operatorType = parser.Previous.Type;
         this.ParsePrecedence(GetPrecedence(operatorType) + 1);
@@ -167,18 +202,22 @@ public unsafe class Compiler
             this.parser.Error("Expect expression.");
             return;
         }
-        
-        prefixRule();
+
+        var canAssign = precedence <= Precedence.Assignment;
+        prefixRule(canAssign);
 
         while(precedence <= GetPrecedence(this.parser.Current.Type))
         {
             this.parser.Advance();
-            Infix(this.parser.Previous.Type)?.Invoke();
+            Infix(this.parser.Previous.Type)?.Invoke(canAssign);
         }
+
+        if (canAssign && this.parser.Match(TokenType.Equal))
+            this.parser.Error("Invalid assignment type.");
     }
 
 
-    private Action? GetPrefix(TokenType type) =>
+    private Action<bool>? GetPrefix(TokenType type) =>
         type switch
         {
             TokenType.Bang => this.Unary,
@@ -189,10 +228,11 @@ public unsafe class Compiler
             TokenType.Number => this.Number,
             TokenType.True => this.Literal,
             TokenType.String => this.String,
+            TokenType.Identifier => this.Variable,
             _ => null
         };
 
-    private Action? Infix(TokenType type) =>
+    private Action<bool>? Infix(TokenType type) =>
         type switch 
         { 
             TokenType.EqualEqual or
@@ -218,7 +258,21 @@ public unsafe class Compiler
             _ => Precedence.None
         };
 
-    private void Literal()
+    private void Variable(bool canAssign) => this.NamedVariable(this.parser.Previous, canAssign);
+
+    private void NamedVariable(Token name, bool canAssign)
+    {
+        var arg = this.IdentifierConstant(name);
+        if (canAssign && this.parser.Match(TokenType.Equal))
+        {
+            this.Expression();
+            this.EmitBytes((byte)OpCode.SetGlobal, arg);
+        }
+        else
+            this.EmitBytes((byte)OpCode.GetGlobal, arg);
+    }
+
+    private void Literal(bool canAssign)
     {
         switch (this.parser.Previous.Type)
         {
@@ -234,7 +288,7 @@ public unsafe class Compiler
         }
     }
 
-    private unsafe void String()
+    private unsafe void String(bool canAssign)
     {
         var p = this.parser.Previous;
         var chars = Encoding.ASCII.GetBytes(p.Lexeme[(p.Start + 1)..(p.Start + p.Length - 2)]);

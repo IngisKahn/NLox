@@ -5,7 +5,9 @@ public enum OpCode : byte
     Nil,
     True,
     False,
+    DefineGlobal,
     Equal,
+    GetGlobal,
     Greater,
     Less,
     Add,
@@ -16,5 +18,6 @@ public enum OpCode : byte
     Negate,
     Pop,
     Print,
-    Return
+    Return,
+    SetGlobal
 }

@@ -12,7 +12,8 @@ public unsafe class VirtualMachine : IDisposable
     private readonly Value* stack;
     private Value* stackTop;
     private Object* objects;
-    private Table strings = new();
+    private readonly Table strings = new();
+    private readonly Table globals = new();
 
     private bool disposedValue;
 
@@ -36,6 +37,7 @@ public unsafe class VirtualMachine : IDisposable
         {
 
         }
+        this.globals.Free();
         this.strings.Free();
         NativeMemory.Free(this.stack);
         this.FreeObjects();
@@ -156,6 +158,32 @@ public unsafe class VirtualMachine : IDisposable
                 case OpCode.Pop:
                     this.Pop();
                     break;
+                case OpCode.GetGlobal:
+                    {
+                        ObjectString* name = this.ReadConstant(chunk);
+                        var value = this.globals.Get(name);
+                        if (value == null)
+                            throw new RuntimeException($"Undefined variable '{name->ToString()}'.");
+                        this.Push(*value);
+                        break;
+                    }
+                case OpCode.DefineGlobal:
+                    {
+                        ObjectString* name = this.ReadConstant(chunk);
+                        this.globals.Add(name, *Peek(0));
+                        Pop();
+                        break;
+                    }
+                case OpCode.SetGlobal:
+                    {
+                        ObjectString* name = this.ReadConstant(chunk);
+                        if (this.globals.Add(name, *this.Peek(0)))
+                        {
+                            this.globals.Delete(name);
+                            throw new RuntimeException($"Undefined variable '{name->ToString()}'.");
+                        }
+                    }
+                    break;
                 case OpCode.Print:
                     Common.PrintValue(this.Pop());
                     Console.WriteLine();
@@ -175,7 +203,7 @@ public unsafe class VirtualMachine : IDisposable
 
         var length = a->Length + b->Length;
         var chars = Memory.Allocate<byte>((nuint)length);
-        Buffer.MemoryCopy(a->Chars, chars, (nuint)a->Length, (nuint)a->Length); 
+        Buffer.MemoryCopy(a->Chars, chars, (nuint)a->Length, (nuint)a->Length);
         Buffer.MemoryCopy(b->Chars, chars + a->Length, (nuint)b->Length, (nuint)b->Length);
         *this.Peek(0) = ObjectString.TakeString(chars, length, RegisterObject, strings);
     }

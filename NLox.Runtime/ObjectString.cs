@@ -1,4 +1,6 @@
-﻿namespace NLox.Runtime;
+﻿using System.Text;
+
+namespace NLox.Runtime;
 using System.Runtime.InteropServices;
 
 [StructLayout(LayoutKind.Sequential, Pack = 1)]
@@ -50,4 +52,6 @@ public unsafe struct ObjectString
         }
         return hash;
     }
+
+    public override string ToString() => Encoding.ASCII.GetString(this.Chars, this.Length);
 }
