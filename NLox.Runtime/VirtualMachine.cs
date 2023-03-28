@@ -12,6 +12,7 @@ public unsafe class VirtualMachine : IDisposable
     private readonly Value* stack;
     private Value* stackTop;
     private Object* objects;
+    private Table strings = new();
 
     private bool disposedValue;
 
@@ -35,6 +36,7 @@ public unsafe class VirtualMachine : IDisposable
         {
 
         }
+        this.strings.Free();
         NativeMemory.Free(this.stack);
         this.FreeObjects();
         disposedValue = true;
@@ -67,7 +69,7 @@ public unsafe class VirtualMachine : IDisposable
     public void Interpret(string source)
     {
         using Chunk chunk = new();
-        if (!new Compiler(source, chunk, RegisterObject).Compile())
+        if (!new Compiler(source, chunk, RegisterObject, strings).Compile())
             throw new CompileException();
 
         this.Interpret(chunk);
@@ -170,7 +172,7 @@ public unsafe class VirtualMachine : IDisposable
         var chars = Memory.Allocate<byte>((nuint)length);
         Buffer.MemoryCopy(a->Chars, chars, (nuint)a->Length, (nuint)a->Length); 
         Buffer.MemoryCopy(b->Chars, chars + a->Length, (nuint)b->Length, (nuint)b->Length);
-        *this.Peek(0) = ObjectString.TakeString(chars, length, RegisterObject);
+        *this.Peek(0) = ObjectString.TakeString(chars, length, RegisterObject, strings);
     }
 
     public void RegisterObject(IntPtr p)

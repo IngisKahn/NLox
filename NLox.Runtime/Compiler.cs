@@ -9,12 +9,14 @@ public unsafe class Compiler
     private readonly Parser parser;
     private readonly Chunk chunk;
     private readonly Action<IntPtr> registerObject;
+    private readonly Table strings;
 
-    public Compiler(string source, Chunk chunk, Action<IntPtr> registerObject)
+    public Compiler(string source, Chunk chunk, Action<IntPtr> registerObject, Table strings)
     {
         this.parser = new(source); 
         this.chunk = chunk;
         this.registerObject = registerObject;
+        this.strings = strings;
     }
 
     public bool Compile()
@@ -210,7 +212,7 @@ public unsafe class Compiler
         fixed (byte* pChars = chars)
         {
             this.EmitConstant(
-                ObjectString.CopyString(pChars, this.parser.Previous.Length - 2, registerObject));
+                ObjectString.CopyString(pChars, this.parser.Previous.Length - 2, registerObject, strings));
         }
     }
 }

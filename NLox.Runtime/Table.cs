@@ -68,7 +68,7 @@ public unsafe class Table
             var dest = FindEntry(newEntries, capacity, entry->Key);
             dest->Key = entry->Key;
             dest->Value = entry->Value;
-            this.Count++:
+            this.Count++;
         }
 
         Memory.FreeArray(this.entries, (nuint)this.Capacity);
@@ -104,6 +104,35 @@ public unsafe class Table
         entry->Key = null;
         entry->Value = false;
         return true;
+    }
+
+    public ObjectString* FindString(byte* chars, int length, uint hash)
+    {
+        if (this.Count == 0)
+            return null;
+
+        var index = hash % this.Capacity;
+        for (; ; )
+        {
+            var entry = &entries[index];
+            // TODO: test for race condition
+
+            if (entry->Key == null)
+            {
+                if (entry->Value.IsNil)
+                    return null;
+            }
+            else if (entry->Key->Length == length
+                     && entry->Key->Hash == hash)
+            {
+                var sa = new Span<byte>(entry->Key->Chars, entry->Key->Length);
+                var sb = new Span<byte>(chars, length);
+                if (sa.SequenceEqual(sb))
+                    return entry->Key;
+            }
+
+            index = (index + 1) % this.Capacity;
+        }
     }
 }
 

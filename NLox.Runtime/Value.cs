@@ -81,15 +81,7 @@ public readonly unsafe struct Value : IEquatable<Value>
             case ValueType.Number:
                 return Math.Abs(this.doubleValue - other.doubleValue) < 0.00000001;
             case ValueType.Object:
-                if (this.objectValue == other.objectValue)
-                    return true;
-                var a = (ObjectString*)this;
-                var b = (ObjectString*)other;
-                if (a->Length != b->Length)
-                    return false;
-                var sa = new Span<byte>(a->Chars, a->Length);
-                var sb = new Span<byte>(b->Chars, b->Length);
-                return sa.SequenceEqual(sb);
+                return this.objectValue == other.objectValue;
         }
 
         return true;
