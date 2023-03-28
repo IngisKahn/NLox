@@ -40,6 +40,8 @@ public static class Common
             case OpCode.Multiply:
             case OpCode.Divide:
             case OpCode.Negate:
+            case OpCode.Pop:
+            case OpCode.Print:
             case OpCode.Return:
                 return SimpleInstruction(instruction.ToString(), offset);
             default:

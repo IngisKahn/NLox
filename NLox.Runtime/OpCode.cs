@@ -14,5 +14,7 @@ public enum OpCode : byte
     Divide,
     Not,
     Negate,
+    Pop,
+    Print,
     Return
 }

@@ -153,9 +153,14 @@ public unsafe class VirtualMachine : IDisposable
                     }
                     *this.Peek(0) = -*this.Peek(0);
                     break;
-                case OpCode.Return:
+                case OpCode.Pop:
+                    this.Pop();
+                    break;
+                case OpCode.Print:
                     Common.PrintValue(this.Pop());
                     Console.WriteLine();
+                    break;
+                case OpCode.Return:
                     return;
                 default:
                     throw new RuntimeException("Invalid opcode, corrupt program");

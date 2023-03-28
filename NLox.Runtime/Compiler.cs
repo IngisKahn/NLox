@@ -22,10 +22,39 @@ public unsafe class Compiler
     public bool Compile()
     {
         parser.Advance();
-        this.Expression();
-        parser.Consume(TokenType.EoF, "Expect end of stream.");
+        while (!this.parser.Match(TokenType.EoF))
+            this.Declaration();
         this.EndCompiler();
         return !parser.HadError;
+    }
+
+    public void Declaration()
+    {
+        this.Statement();
+        if (this.parser.PanicMode)
+            parser.Synchronize();
+    }
+
+    public void Statement()
+    {
+        if (this.parser.Match(TokenType.Print))
+            this.PrintStatement();
+        else
+            this.ExpressionStatement();
+    }
+
+    public void ExpressionStatement()
+    {
+        this.Expression();
+        this.parser.Consume(TokenType.Semicolon, "Expect ';' after expression.");
+        this.EmitByte((byte)OpCode.Pop);
+    }
+
+    public void PrintStatement()
+    {
+        this.Expression();
+        this.parser.Consume(TokenType.Semicolon, "Expect ';' after value.");
+        this.EmitByte((byte)OpCode.Print);
     }
 
     private void EmitByte(byte b) => chunk.Write(b, parser.Previous.Line);
@@ -238,7 +267,7 @@ public class Parser
     public Token Previous { get; private set; } = new Token(TokenType.Error, string.Empty, 0, 0, 0);
     public Token Current { get; private set; } = new Token(TokenType.Error, string.Empty, 0, 0, 0);
     public bool HadError { get; private set; }
-    private bool panicMode;
+    public bool PanicMode { get; private set; }
 
     public Parser(string source) => this.scanner = new(source);
 
@@ -256,15 +285,26 @@ public class Parser
         }
     }
 
+
+    public bool Match(TokenType type)
+    {
+        if (!this.Check(type))
+            return false;
+        this.Advance();
+        return true;
+    }
+
+    public bool Check(TokenType type) => this.Current.Type == type;
+
     private void ErrorAtCurrent(string message) => this.ErrorAt(this.Current, message);
 
     public void Error(string message) => this.ErrorAt(this.Previous, message);
 
     private void ErrorAt(Token token, string message)
     {
-        if (this.panicMode)
+        if (this.PanicMode)
             return;
-        this.panicMode = true;
+        this.PanicMode = true;
         var err = Console.Error;
         err.Write($"[line {token.Line}] Error");
 
@@ -290,5 +330,29 @@ public class Parser
             this.Advance();
         else
             this.ErrorAtCurrent(message);
+    }
+
+    public void Synchronize()
+    {
+        this.PanicMode = false;
+
+        while (this.Current.Type != TokenType.EoF)
+        {
+            if (this.Previous.Type == TokenType.Semicolon)
+                return;
+            switch (this.Current.Type)
+            {
+                case TokenType.Class:
+                case TokenType.Fun:
+                case TokenType.Var:
+                case TokenType.For:
+                case TokenType.If:
+                case TokenType.While:
+                case TokenType.Print:
+                case TokenType.Return:
+                    return;
+            }
+            this.Advance();
+        }
     }
 }
