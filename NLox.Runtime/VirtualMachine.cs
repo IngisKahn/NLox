@@ -71,7 +71,7 @@ public unsafe class VirtualMachine : IDisposable
     public void Interpret(string source)
     {
         using Chunk chunk = new();
-        if (!new Compiler(source, chunk, RegisterObject, strings).Compile())
+        if (!new Compiler(source, chunk, RegisterObject, strings, new()).Compile())
             throw new CompileException();
 
         this.Interpret(chunk);
@@ -182,6 +182,18 @@ public unsafe class VirtualMachine : IDisposable
                             this.globals.Delete(name);
                             throw new RuntimeException($"Undefined variable '{name->ToString()}'.");
                         }
+                    }
+                    break;
+                case OpCode.GetLocal:
+                    {
+                        var slot = this.ReadByte();
+                        this.Push(this.stack[slot]);
+                    }
+                    break;
+                case OpCode.SetLocal:
+                    {
+                        var slot = this.ReadByte();
+                        this.stack[slot] = *this.Peek(0);
                     }
                     break;
                 case OpCode.Print:

@@ -8,6 +8,7 @@ public enum OpCode : byte
     DefineGlobal,
     Equal,
     GetGlobal,
+    GetLocal,
     Greater,
     Less,
     Add,
@@ -19,5 +20,6 @@ public enum OpCode : byte
     Pop,
     Print,
     Return,
-    SetGlobal
+    SetGlobal,
+    SetLocal
 }

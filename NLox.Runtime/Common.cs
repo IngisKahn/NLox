@@ -1,4 +1,5 @@
-﻿using System.Runtime.CompilerServices;
+﻿using System.Reflection.Metadata;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
 
@@ -26,6 +27,9 @@ public static class Common
         var instruction = (OpCode)chunk[offset];
         switch (instruction)
         {
+            case OpCode.GetLocal:
+            case OpCode.SetLocal:
+                return ByteInstruction(instruction.ToString(), chunk, offset);
             case OpCode.Constant:
             case OpCode.DefineGlobal:
             case OpCode.GetGlobal:
@@ -51,6 +55,13 @@ public static class Common
                 Console.WriteLine("Unknown opcode " + instruction);
                 return offset + 1;
         }
+    }
+
+    public static int ByteInstruction(string name, Chunk chunk, int offset)
+    {
+        var slot = chunk.Code[offset + 1];
+        Console.WriteLine($"{name,-16} {slot,4} '");
+        return offset + 2;
     }
 
     public static int SimpleInstruction(string name, int offset)

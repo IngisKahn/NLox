@@ -10,13 +10,15 @@ public unsafe class Compiler
     private readonly Chunk chunk;
     private readonly Action<IntPtr> registerObject;
     private readonly Table strings;
+    private Scope scope;
 
-    public Compiler(string source, Chunk chunk, Action<IntPtr> registerObject, Table strings)
+    public Compiler(string source, Chunk chunk, Action<IntPtr> registerObject, Table strings, Scope scope)
     {
         this.parser = new(source); 
         this.chunk = chunk;
         this.registerObject = registerObject;
         this.strings = strings;
+        this.scope = scope;
     }
 
     public bool Compile()
@@ -51,13 +53,63 @@ public unsafe class Compiler
         this.DefineVariable(global);
     }
 
-    private void DefineVariable(byte global) =>
+    private void DefineVariable(byte global)
+    {
+        if (scope.Depth > 0)
+        {
+            this.MarkInitialized();
+            return;
+        }
+
         this.EmitByte((byte) OpCode.DefineGlobal);
+    }
+
+    private void MarkInitialized()
+    {
+        this.scope.Locals[this.scope.LocalCount - 1].Depth = this.scope.Depth;
+    }
 
     public byte ParseVariable(string errorMessage)
     {
         this.parser.Consume(TokenType.Identifier, errorMessage);
+
+        this.DeclareVariable();
+        if (scope.Depth > 0)
+            return 0;  
         return this.IdentifierConstant(this.parser.Previous);
+    }
+
+    private void DeclareVariable()
+    {
+        if (scope.Depth == 0)
+            return;
+        var name = this.parser.Previous;
+
+        for (var i = scope.LocalCount - 1; i >= 0; i--)
+        {
+            var local = scope.Locals[i];
+            if (local.Depth != -1 && local.Depth < scope.Depth)
+                break;
+            if (this.IdentifiersEqual(name, local.Name))
+                this.parser.Error("Already a variable with this name in this scope.");
+        }
+
+        this.AddLocal(name);
+    }
+
+    private bool IdentifiersEqual(Token a, Token b)
+    {
+        return a.Lexeme == b.Lexeme;
+    }
+
+    private void AddLocal(Token name)
+    {
+        if (scope.LocalCount == 256)
+        {
+            this.parser.Error("Too many local variables in a function.");
+            return;
+        }
+        scope.Locals[scope.LocalCount++] = new(name, -1);
     }
 
     private byte IdentifierConstant(Token name)
@@ -74,8 +126,37 @@ public unsafe class Compiler
     {
         if (this.parser.Match(TokenType.Print))
             this.PrintStatement();
+        else if (this.parser.Match(TokenType.LeftBrace))
+        {
+            this.BeginScope();
+            this.Block();
+            this.EndScope();
+        }
         else
             this.ExpressionStatement();
+    }
+
+    private void EndScope()
+    {
+        this.scope.Depth++;
+
+        while (scope.LocalCount > 0 && scope.Locals[scope.LocalCount - 1].Depth > scope.Depth)
+        {
+            this.EmitByte((byte)OpCode.Pop);
+            scope.LocalCount--;
+        }
+    }
+
+    private void BeginScope()
+    {
+        this.scope.Depth--;
+    }
+
+    private void Block()
+    {
+        while (!this.parser.Check(TokenType.RightBrace) && !this.parser.Check(TokenType.EoF))
+            this.Declaration();
+        this.parser.Consume(TokenType.RightBrace, "Expect ')' after block.");
     }
 
     public void ExpressionStatement()
@@ -262,14 +343,40 @@ public unsafe class Compiler
 
     private void NamedVariable(Token name, bool canAssign)
     {
-        var arg = this.IdentifierConstant(name);
+        OpCode getOp, setOp;
+        var arg = this.ResolveLocal(scope, name);
+        if (arg != -1)
+        {
+            getOp = OpCode.GetLocal;
+            setOp = OpCode.SetLocal;
+        }
+        else
+        {
+            arg = this.IdentifierConstant(name);
+            getOp = OpCode.GetGlobal;
+            setOp = OpCode.SetGlobal;
+        }
         if (canAssign && this.parser.Match(TokenType.Equal))
         {
             this.Expression();
-            this.EmitBytes((byte)OpCode.SetGlobal, arg);
+            this.EmitBytes((byte)setOp, (byte)arg);
         }
         else
-            this.EmitBytes((byte)OpCode.GetGlobal, arg);
+            this.EmitBytes((byte)getOp, (byte)arg);
+    }
+
+    private int ResolveLocal(Scope s, Token name)
+    {
+        for (var i = s.LocalCount - 1; i >= 0; i--)
+        {
+            var local = s.Locals[i];
+            if (!this.IdentifiersEqual(name, local.Name)) 
+                continue;
+            if (local.Depth == -1)
+                this.parser.Error("Can't read local variable in its own initializer.");
+            return i;
+        }
+        return -1;
     }
 
     private void Literal(bool canAssign)
@@ -410,3 +517,12 @@ public class Parser
         }
     }
 }
+
+public class Scope
+{
+    public Local[] Locals = new Local[256];
+    public int LocalCount;
+    public int Depth;
+}
+
+public record struct Local(Token Name, int Depth);
