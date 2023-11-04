@@ -72,19 +72,15 @@ public readonly unsafe struct Value : IEquatable<Value>
 
     public bool Equals(Value other)
     {
-        if (type != other.type)
+        if (this.type != other.type)
             return false;
-        switch (this.type)
+        return this.type switch
         {
-            case ValueType.Bool:
-                return this.boolValue == other.boolValue;
-            case ValueType.Number:
-                return Math.Abs(this.doubleValue - other.doubleValue) < 0.00000001;
-            case ValueType.Object:
-                return this.objectValue == other.objectValue;
-        }
-
-        return true;
+            ValueType.Bool => this.boolValue == other.boolValue,
+            ValueType.Number => Math.Abs(this.doubleValue - other.doubleValue) < 0.00000001,
+            ValueType.Object => this.objectValue == other.objectValue,
+            _ => true,
+        };
     }
 
     public override bool Equals(object? obj) => obj is Value other && Equals(other);
