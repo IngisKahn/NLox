@@ -1,7 +1,13 @@
 ﻿using NLox.Runtime;
-using System.Text;
-using static NLox.Runtime.Common;
 using VirtualMachine vm = new();
+
+Chunk c = new();
+c.Write((byte)OpCode.Constant, 123);
+c.Write((byte)c.AddConstant(1.2), 123);
+c.Write((byte)OpCode.Return, 123);
+Common.DisassembleChunk(c, "test chunk");
+
+return;
 
 if (args.Length == 1)
     await Repl();
